@@ -61,7 +61,7 @@ Future<KamoteGame> _startGame(WidgetTester tester, AppServices services, int see
 Future<void> _skip(WidgetTester tester, double seconds, {void Function()? each}) async {
   for (var i = 0; i < (seconds * fps).round(); i++) {
     each?.call();
-    await tester.pump(const Duration(microseconds: 1000000 ~/ fps));
+    await tester.pump(Duration(microseconds: 1000000 ~/ fps));
   }
 }
 

@@ -11,10 +11,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kamote_rider/services/app_services.dart';
 import 'package:kamote_rider/widgets/ui_kit.dart';
 
-/// Logical screen of a 1080×1920 phone at 2.7× density.
-const Size logicalSize = Size(400, 711.12);
-const double pixelRatio = 2.7;
-const double fps = 30;
+/// Logical screen of a 1080×1920 phone at 2.7× density (the default).
+Size logicalSize = const Size(400, 711.12);
+double pixelRatio = 2.7;
+double fps = 30;
+
+/// Full HD widescreen (1920×1080) for the PC-style gameplay showcase.
+void useWidescreen({double frameRate = 60}) {
+  logicalSize = const Size(960, 540);
+  pixelRatio = 2.0;
+  fps = frameRate;
+}
+
+/// Portrait phone (1080×1920).
+void usePhone({double frameRate = 30}) {
+  logicalSize = const Size(400, 711.12);
+  pixelRatio = 2.7;
+  fps = frameRate;
+}
 
 final GlobalKey captureKey = GlobalKey();
 
@@ -73,6 +87,7 @@ Widget appShell(AppServices services, Widget child) => AppServicesScope(
 /// Writes frames of one shot as numbered PNGs.
 class Recorder {
   Recorder(this.shot) {
+    if (!enabled) return;
     final dir = Directory('$framesRoot/$shot');
     if (dir.existsSync()) dir.deleteSync(recursive: true);
     dir.createSync(recursive: true);
@@ -80,6 +95,13 @@ class Recorder {
 
   final String shot;
   int frames = 0;
+
+  /// TRAILER_ONLY=shot1,shot2 re-records just those shots; the others are
+  /// still simulated (so the run stays identical) but not captured.
+  bool get enabled {
+    final only = Platform.environment['TRAILER_ONLY'];
+    return only == null || only.split(',').contains(shot);
+  }
 
   /// Per-frame game state, saved next to the frames so the soundtrack can
   /// follow what happens on screen.
@@ -106,10 +128,14 @@ class Recorder {
     final n = (seconds * fps).round();
     for (var i = 0; i < n; i++) {
       each?.call();
-      await tester.pump(const Duration(microseconds: 1000000 ~/ fps));
+      await tester.pump(Duration(microseconds: 1000000 ~/ fps));
+      if (!enabled) {
+        frames++;
+        continue;
+      }
       await grab(tester);
       if (log != null) events.add(log());
     }
-    if (events.isNotEmpty) File('$framesRoot/$shot/events.json').writeAsStringSync(jsonEncode(events));
+    if (enabled && events.isNotEmpty) File('$framesRoot/$shot/events.json').writeAsStringSync(jsonEncode(events));
   }
 }
