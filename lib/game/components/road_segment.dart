@@ -129,26 +129,43 @@ class RoadComponent extends Component with HasGameReference<KamoteGame> {
     scroll += game.scrollSpeed * dt;
     _time += dt;
     final first = (scroll / segmentHeight).floor();
-    _segmentEnv.removeWhere((k, _) => k < first - 1);
-    _decor.removeWhere((k, _) => k < first - 1);
+    // Keep the segments still visible behind the rider in the 3D view.
+    _segmentEnv.removeWhere((k, _) => k < first - 3);
+    _decor.removeWhere((k, _) => k < first - 3);
   }
 
   int _envFor(int k) => _segmentEnv.putIfAbsent(k, () => game.distance.environmentIndex);
 
   @override
-  void render(Canvas canvas) {
-    final viewH = game.viewHeight;
-    final first = (scroll / segmentHeight).floor();
-    final last = ((scroll + viewH) / segmentHeight).floor();
-    // Assign from the top down so the newest segment gets the current world.
+  void render(Canvas canvas) => renderRange(canvas, 0, game.viewHeight);
+
+  /// Index of the segment containing world row [y].
+  int _segmentAt(double y) => ((scroll + game.viewHeight - y) / segmentHeight).floor();
+
+  double _segmentTop(int k) => game.viewHeight - ((k + 1) * segmentHeight - scroll);
+
+  /// Calls [visit] for every segment overlapping world rows [yFar]..[yNear],
+  /// far to near, with the segment's world and top row.
+  void forEachSegment(double yFar, double yNear, void Function(EnvironmentTheme env, double top) visit) {
+    final first = _segmentAt(yNear);
+    final last = _segmentAt(yFar);
+    // Assign from the far end down so the newest segment gets the current world.
+    for (var k = last; k >= first; k--) {
+      visit(Environments.at(_envFor(k)), _segmentTop(k));
+    }
+  }
+
+  /// Draws the road between world rows [yFar] (ahead) and [yNear].
+  void renderRange(Canvas canvas, double yFar, double yNear) {
+    final first = _segmentAt(yNear);
+    final last = _segmentAt(yFar);
     for (var k = last; k >= first; k--) {
       _envFor(k);
     }
     for (var k = first; k <= last; k++) {
-      final top = viewH - ((k + 1) * segmentHeight - scroll);
-      _drawSegment(canvas, Environments.at(_segmentEnv[k]!), k, top);
+      _drawSegment(canvas, Environments.at(_segmentEnv[k]!), k, _segmentTop(k));
     }
-    _drawLaneMarkings(canvas, viewH);
+    _drawLaneMarkings(canvas, yFar, yNear);
   }
 
   // Screen y of a road distance d is: viewH - (d - scroll).
@@ -276,16 +293,18 @@ class RoadComponent extends Component with HasGameReference<KamoteGame> {
     }
   }
 
-  void _drawLaneMarkings(Canvas c, double viewH) {
+  void _drawLaneMarkings(Canvas c, double yFar, double yNear) {
+    final viewH = game.viewHeight;
     const roadL = GameConfig.roadLeft;
     const lw = GameConfig.laneWidth;
     const dash = 26.0;
     const period = 56.0;
     // Phase so dashes move with the road.
     final phase = scroll % period;
+    final start = phase + ((yFar - phase) / period).floor() * period - period;
     for (final lane in [1, 3]) {
       final x = roadL + lw * lane - 2;
-      for (var y = -period + phase; y < viewH; y += period) {
+      for (var y = start; y < yNear; y += period) {
         // Paint wears unevenly; the fade is keyed to the dash's road
         // position so it stays fixed while scrolling.
         final idx = ((scroll + viewH - y) / period).round() + lane * 7;
@@ -297,12 +316,13 @@ class RoadComponent extends Component with HasGameReference<KamoteGame> {
     // Center double yellow separates oncoming lanes.
     _p.color = const Color(0xFFFFC400);
     final cx = roadL + lw * GameConfig.oncomingLaneCount;
-    c.drawRect(Rect.fromLTWH(cx - 5, 0, 3, viewH), _p);
-    c.drawRect(Rect.fromLTWH(cx + 2, 0, 3, viewH), _p);
+    final lines = Rect.fromLTRB(0, yFar, 0, yNear);
+    c.drawRect(Rect.fromLTRB(cx - 5, lines.top, cx - 2, lines.bottom), _p);
+    c.drawRect(Rect.fromLTRB(cx + 2, lines.top, cx + 5, lines.bottom), _p);
     // Edge lines.
     _p.color = const Color(0xCCFFFFFF);
-    c.drawRect(Rect.fromLTWH(roadL + 2, 0, 3, viewH), _p);
-    c.drawRect(Rect.fromLTWH(GameConfig.roadRight - 5, 0, 3, viewH), _p);
+    c.drawRect(Rect.fromLTRB(roadL + 2, lines.top, roadL + 5, lines.bottom), _p);
+    c.drawRect(Rect.fromLTRB(GameConfig.roadRight - 5, lines.top, GameConfig.roadRight - 2, lines.bottom), _p);
   }
 }
 

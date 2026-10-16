@@ -13,7 +13,7 @@ class EnvironmentManager extends Component with HasGameReference<KamoteGame> {
   EnvironmentManager({math.Random? random}) : _rnd = random ?? math.Random();
 
   final math.Random _rnd;
-  static const int maxProps = 36;
+  static const int maxProps = 64;
 
   int _currentIndex = -1;
   double _leftCountdown = 0;
@@ -36,7 +36,7 @@ class EnvironmentManager extends Component with HasGameReference<KamoteGame> {
   /// Pre-fills the screen with scenery so a run never starts on bare ground.
   void populate(double viewHeight) {
     _sync();
-    for (var y = viewHeight; y > -40; y -= theme.propSpacing * 0.7) {
+    for (var y = viewHeight; y > GameConfig.propSpawnY; y -= theme.propSpacing * 0.7) {
       _spawnProp(true, y + _rnd.nextDouble() * 30);
       _spawnProp(false, y - 30 + _rnd.nextDouble() * 30);
     }
@@ -51,11 +51,11 @@ class EnvironmentManager extends Component with HasGameReference<KamoteGame> {
     _rightCountdown -= moved;
     _flyoverCountdown -= moved;
     if (_leftCountdown <= 0) {
-      _spawnProp(true, GameConfig.spawnY + 40);
+      _spawnProp(true, GameConfig.propSpawnY);
       _leftCountdown = theme.propSpacing * (0.6 + _rnd.nextDouble() * 0.8);
     }
     if (_rightCountdown <= 0) {
-      _spawnProp(false, GameConfig.spawnY + 40);
+      _spawnProp(false, GameConfig.propSpawnY);
       _rightCountdown = theme.propSpacing * (0.6 + _rnd.nextDouble() * 0.8);
     }
     if (_flyoverCountdown <= 0) {
@@ -96,7 +96,7 @@ class EnvironmentManager extends Component with HasGameReference<KamoteGame> {
 
   void _spawnFlyover() {
     final prop = SceneryProp(type: PropType.flyover, onLeft: false, variant: 0)
-      ..position = Vector2(GameConfig.worldWidth / 2, GameConfig.spawnY);
+      ..position = Vector2(GameConfig.worldWidth / 2, GameConfig.propSpawnY);
     _track(prop);
     game.world.add(prop);
   }

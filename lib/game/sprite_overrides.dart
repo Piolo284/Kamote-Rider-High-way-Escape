@@ -13,6 +13,9 @@ import 'package:flutter/services.dart';
 /// * `cash.png`, `fuel.png`, `officer.png`, `ambulance.png`
 ///
 /// Missing files are simply skipped, so the game always stays playable.
+///
+/// The 3D view uses `vehicle_*` (on roofs), `cash` and `fuel`; it draws the
+/// bike, officer and ambulance with its own rear-view art.
 class SpriteOverrides {
   SpriteOverrides();
 

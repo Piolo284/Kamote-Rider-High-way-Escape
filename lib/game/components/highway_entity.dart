@@ -38,7 +38,7 @@ abstract class HighwayEntity extends PositionComponent with HasGameReference<Kam
     super.update(dt);
     previousY = y;
     y += screenSpeed * dt;
-    if (y - height / 2 > game.viewHeight + 80 || y + height / 2 < GameConfig.spawnY - 1500) {
+    if (y - height / 2 > game.viewHeight + 80 || y + height / 2 < GameConfig.propSpawnY - 400) {
       removeFromParent();
     }
   }

@@ -28,6 +28,10 @@ class GameConfig {
   /// Entities spawn this far above the top of the screen.
   static const double spawnY = -150;
 
+  /// Roadside scenery spawns much farther ahead so the 3D view has
+  /// buildings and trees all the way to the horizon.
+  static const double propSpawnY = -1900;
+
   // ----------------------------------------------------------------- speed
   /// Converts in-game meters into world units for scrolling.
   static const double pixelsPerMeter = 14;

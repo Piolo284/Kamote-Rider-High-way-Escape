@@ -24,6 +24,11 @@ class CashCollectible extends HighwayEntity with EntityHitbox, Collectible {
   Sprite? _override;
   void Function(CashCollectible)? onRecycle;
 
+  double get spinPhase => _phase;
+
+  /// Seconds since being picked up, or -1.
+  double get pickupTime => _pickup;
+
   @override
   Vector2 get hitSize => _hit;
 

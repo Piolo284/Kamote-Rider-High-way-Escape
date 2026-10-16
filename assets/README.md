@@ -48,6 +48,8 @@ Only use voices you recorded yourself or have a license for. Don't use celebrity
 
 To replace the drawn art with your own, put PNG files here using the names below. They load automatically on the next launch. Draw each sprite top-down with the front facing **up**.
 
+In the 3D view, `vehicle_*.png` is shown on the vehicle's roof, and `cash.png` and `fuel.png` are shown as upright pickups. The bike, officer and ambulance PNGs are only used by the flat top-down drawing code; the 3D view draws those from behind with its own art.
+
 | File | Replaces |
 |---|---|
 | `bike_<id>.png` | A motorcycle, e.g. `bike_kamote_110.png`, `bike_thunder_250.png` (ids are in `lib/models/motorcycle_model.dart`) |

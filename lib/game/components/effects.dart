@@ -29,6 +29,14 @@ class FloatingText extends PositionComponent {
   double _age = 0;
   static const double _life = 0.9;
 
+  TextPainter get painter => _painter;
+
+  /// Pop-in / fade-out size multiplier for the current age.
+  double get popScale {
+    final t = _age / _life;
+    return t < 0.15 ? 0.6 + t / 0.15 * 0.5 : (t > 0.75 ? 1.1 * (1 - (t - 0.75) / 0.25) : 1.1);
+  }
+
   @override
   void update(double dt) {
     _age += dt;
@@ -38,8 +46,7 @@ class FloatingText extends PositionComponent {
 
   @override
   void render(Canvas canvas) {
-    final t = _age / _life;
-    final s = t < 0.15 ? 0.6 + t / 0.15 * 0.5 : (t > 0.75 ? 1.1 * (1 - (t - 0.75) / 0.25) : 1.1);
+    final s = popScale;
     canvas.save();
     canvas.scale(s);
     _painter.paint(canvas, Offset(-_painter.width / 2, -_painter.height / 2));
@@ -125,6 +132,8 @@ class AmbulanceResponder extends PositionComponent with HasGameReference<KamoteG
   late Vector2 _target;
   Sprite? _override;
 
+  double get time => _time;
+
   @override
   Future<void> onLoad() async {
     _override = game.sprites.get('ambulance');
@@ -169,6 +178,8 @@ class OncomingWarning extends PositionComponent with HasGameReference<KamoteGame
   final double duration;
   double _age = 0;
   static final Paint _p = Paint()..isAntiAlias = true;
+
+  bool get blinkVisible => (_age * 8).floor().isEven;
 
   @override
   void update(double dt) {

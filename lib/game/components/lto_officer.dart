@@ -26,6 +26,7 @@ class LtoOfficer extends PositionComponent with HasGameReference<KamoteGame> {
   Sprite? _override;
 
   bool get hasCaughtRider => _caught;
+  double get time => _time;
 
   @override
   Future<void> onLoad() async {
@@ -112,6 +113,11 @@ class LtoCheckpoint extends HighwayEntity {
   static final Paint _p = Paint()..isAntiAlias = true;
   static TextPainter? _bannerText;
   static TextPainter? _boothText;
+
+  double get time => _time;
+
+  static TextPainter get bannerText => _bannerText ??= _label('LTO CHECKPOINT', 13, const Color(0xFFFFFFFF));
+  static TextPainter get boothText => _boothText ??= _label('LTO', 10, const Color(0xFF0D47A1));
 
   @override
   void update(double dt) {

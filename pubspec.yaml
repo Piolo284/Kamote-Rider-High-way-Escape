@@ -1,5 +1,5 @@
 name: kamote_rider
-description: "Kamote Rider: Highway Escape - a portrait 2D endless motorcycle arcade game built with Flutter and Flame."
+description: "Kamote Rider: Highway Escape - a portrait 3D endless motorcycle arcade game built with Flutter and Flame."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

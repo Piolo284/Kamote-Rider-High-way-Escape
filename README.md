@@ -1,6 +1,6 @@
 # Kamote Rider: Highway Escape
 
-A portrait-mode 2D endless motorcycle arcade game built with **Flutter** and the **Flame** game engine. It is a fictional, humorous game set on Philippine-inspired highways. All characters, officers, vehicles and brands in it are made up.
+A portrait-mode 3D endless motorcycle arcade game built with **Flutter** and the **Flame** game engine. It is a fictional, humorous game set on Philippine-inspired highways. All characters, officers, vehicles and brands in it are made up.
 
 You ride through five changing worlds and pick up paper money and fuel. Avoid traffic, and survive the 10-second LTO chase. Spend what you earn to release 15 impounded motorcycles.
 
@@ -188,6 +188,9 @@ lib/
     environments.dart        The 5 world themes (visuals, traffic mix, density)
     hud_model.dart           Values the Flutter HUD listens to
     sprite_overrides.dart    Optional PNG replacements for procedural art
+    render3d/                The 3D chase-camera view: camera + projection,
+                             scene renderer, sky, and 3D views of vehicles,
+                             rider, props, obstacles, animals and pickups
     components/              Player, traffic, obstacles, cash, fuel, road,
                              LTO officer + checkpoint, scenery, effects,
                              road_animal (dog/cat/chicken), atmosphere
@@ -212,6 +215,7 @@ test/                        Unit, game-simulation and widget tests
 **Architecture notes**
 
 - The gameplay rules live in plain Dart classes (`systems/`), which are unit-tested without Flame.
+- The game simulates a flat top-down world (lanes across, road scrolling down) and only *draws* it in 3D. `KamoteGame.renderTree` hands the frame to `render3d/SceneRenderer`, which projects that world through a chase camera behind the rider (`Camera3D`). Collisions, spawning and every rule are the same as on the flat world, so 3D changes nothing about balance.
 - Flame's collision callbacks only *report* contacts. `KamoteGame` resolves one highest-priority event per frame, after collision detection runs.
 - `RunStateMachine` allows exactly one run per Play action and one ending per run. `RewardSystem.finalize` pays out exactly once.
 - Movement uses delta time, and frame time is capped at 50 ms to prevent tunneling after a hitch.
@@ -255,7 +259,7 @@ Fuel cans spawn on a timer, not by distance, so fast bikes that burn a lot of fu
 ## 6. Known limitations
 
 - The art is procedural placeholder art in one consistent style. The sound and music are simple synthesized chiptune. Both can be replaced; see `assets/README.md`.
-- The camera is a 2D top-down view from behind the rider, not a pseudo-3D road.
+- The 3D view is drawn with Flutter's 2D canvas (perspective-projected boxes and cut-outs), not a 3D engine. Roads are straight: there are no curves or hills.
 - Missions are local and repeatable: each claim raises the level. They do not reset on a real-world daily calendar.
 - The engine sound does not change pitch with speed.
 - The meme sounds are original synthesized stingers, not voice recordings. You can drop in your own recorded voice lines; see `assets/README.md`.

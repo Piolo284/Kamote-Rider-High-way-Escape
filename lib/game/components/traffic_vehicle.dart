@@ -113,6 +113,18 @@ class TrafficVehicle extends HighwayEntity with EntityHitbox, Hazard {
 
   bool get _merging => mergeFromX != null && _mergeT < 1;
 
+  /// Optional PNG art (see `SpriteOverrides`), drawn front up.
+  Sprite? get spriteOverride => _override;
+
+  /// Seconds since spawning (animation clock).
+  double get animTime => _time;
+
+  /// Remaining knock shake after being struck.
+  double get shakeAmount => _shake;
+
+  /// Turn signal while merging: -1 left, 1 right, 0 off.
+  int get signal => _merging ? ((mergeFromX! > GameConfig.laneCenter(lane)) ? -1 : 1) : 0;
+
   @override
   void render(Canvas canvas) {
     // Gentle suspension sway so traffic feels alive.
@@ -131,7 +143,6 @@ class TrafficVehicle extends HighwayEntity with EntityHitbox, Hazard {
         sprite.render(canvas, size: size);
       }
     } else {
-      final signal = _merging ? ((mergeFromX! > GameConfig.laneCenter(lane)) ? -1 : 1) : 0;
       VehiclePainter.paint(
         canvas,
         size.toSize(),

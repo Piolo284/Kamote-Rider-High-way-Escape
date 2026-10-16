@@ -38,6 +38,16 @@ class PlayerMotorcycle extends PositionComponent with HasGameReference<KamoteGam
   Sprite? _override;
 
   bool get isInvulnerable => _invulnerable > 0;
+  bool get isCrashed => _crashed;
+  double get crashTime => _crashTime;
+  double get time => _time;
+  double get wheelTravel => _wheelTravel;
+
+  /// Body roll in radians (lean into lane changes plus wobble).
+  double get roll => _lean + (_wobble > 0 ? math.sin(_time * 40) * 0.12 * _wobble : 0);
+
+  /// Blink opacity while invulnerable.
+  double get opacity => _invulnerable > 0 && (_time * 12).floor().isEven ? 0.35 : 1.0;
   bool get isBumping => _bumpTimer > 0;
 
   Rect get hitRect => Rect.fromCenter(center: Offset(x, y), width: hitSize.x, height: hitSize.y);

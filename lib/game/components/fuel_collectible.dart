@@ -23,6 +23,11 @@ class FuelCollectible extends HighwayEntity with EntityHitbox, Collectible {
   double _pickup = -1;
   Sprite? _override;
 
+  double get time => _time;
+
+  /// Seconds since being picked up, or -1.
+  double get pickupTime => _pickup;
+
   @override
   Vector2 get hitSize => _hit;
 

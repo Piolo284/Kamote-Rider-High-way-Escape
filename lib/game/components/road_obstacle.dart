@@ -37,6 +37,9 @@ class RoadObstacle extends HighwayEntity with EntityHitbox, Hazard {
 
   static final Paint _p = Paint()..isAntiAlias = true;
 
+  /// Seconds since being knocked away, or -1.
+  double get flyTime => _flyTime;
+
   @override
   Vector2 get hitSize => _hitSize;
 

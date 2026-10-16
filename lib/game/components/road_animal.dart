@@ -148,6 +148,14 @@ class RoadAnimal extends HighwayEntity with EntityHitbox, Hazard {
   static final Paint _p = Paint()..isAntiAlias = true;
 
   bool get isActive => _t >= 0;
+  bool get facingRight => _facingRight;
+  double get animPhase => _anim;
+
+  /// Seconds left of the startled hop.
+  double get hop => _hop;
+
+  /// Shows a "!" (hesitating) or "!!" (startled) bubble.
+  String? get bubble => _hop > 0 ? '!!' : (_t >= 0 && _fleeVx == 0 && path.stepAt(_t).alert ? '!' : null);
 
   @override
   Vector2 get hitSize => _hit;

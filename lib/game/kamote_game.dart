@@ -29,6 +29,7 @@ import 'game_config.dart';
 import 'game_state.dart';
 import 'game_world.dart';
 import 'hud_model.dart';
+import 'render3d/scene_renderer.dart';
 import 'sprite_overrides.dart';
 import 'systems/challenge_reward_manager.dart';
 import 'systems/chase_system.dart';
@@ -105,6 +106,11 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
   final SpeedLines _speedLines = SpeedLines();
   late final Set<Component> _persistent;
 
+  /// Draws the world from the chase camera behind the rider.
+  late final SceneRenderer scene = SceneRenderer(this);
+
+  SpeedLines get speedLines => _speedLines;
+
   /// Navigation hooks supplied by the game screen.
   VoidCallback? onExitToMenu;
   VoidCallback? onOpenGarage;
@@ -167,6 +173,11 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     _layout();
     if (autoStart) startRun();
   }
+
+  /// The world is drawn in 3D by [scene] instead of Flame's flat camera.
+  /// Collisions and every gameplay rule still run on the flat world.
+  @override
+  void renderTree(Canvas canvas) => scene.render(canvas);
 
   @override
   void onGameResize(Vector2 size) {
@@ -345,6 +356,7 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     _resolveCollisions();
     _trackPasses();
     _updateShake(step);
+    scene.update(step);
     _syncHud();
     hud.tick(step);
     hud.flush();
