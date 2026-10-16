@@ -212,7 +212,13 @@ class LtoCheckpoint extends HighwayEntity {
   static TextPainter _label(String text, double size, Color color) => TextPainter(
     text: TextSpan(
       text: text,
-      style: TextStyle(color: color, fontSize: size, fontWeight: FontWeight.w900, letterSpacing: 1.2),
+      style: TextStyle(
+        fontFamily: 'Roboto',
+        color: color,
+        fontSize: size,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 1.2,
+      ),
     ),
     textAlign: TextAlign.center,
     textDirection: TextDirection.ltr,

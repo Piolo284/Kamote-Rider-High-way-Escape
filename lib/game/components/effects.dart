@@ -15,6 +15,7 @@ class FloatingText extends PositionComponent {
         text: TextSpan(
           text: text,
           style: TextStyle(
+            fontFamily: 'Roboto',
             color: color,
             fontSize: fontSize,
             fontWeight: FontWeight.w900,

@@ -183,7 +183,7 @@ class BarkadaResultsScreen extends StatelessWidget {
               style: TextStyle(color: KColors.muted, fontWeight: FontWeight.w900, letterSpacing: 3),
             ),
             Text(
-              '${winner.$1} 👑',
+              winner.$1,
               textAlign: TextAlign.center,
               style: const TextStyle(color: KColors.yellow, fontSize: 34, fontWeight: FontWeight.w900),
             ),

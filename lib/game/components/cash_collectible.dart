@@ -103,7 +103,12 @@ class CashCollectible extends HighwayEntity with EntityHitbox, Collectible {
       return TextPainter(
         text: TextSpan(
           text: '$value',
-          style: const TextStyle(color: Color(0xFFFFFFFF), fontSize: 9, fontWeight: FontWeight.w900),
+          style: const TextStyle(
+            fontFamily: 'Roboto',
+            color: Color(0xFFFFFFFF),
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+          ),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
