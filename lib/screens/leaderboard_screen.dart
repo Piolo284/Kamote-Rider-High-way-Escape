@@ -264,7 +264,7 @@ class _TopScorerCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             '${formatDistance(entry.distanceMeters)} · ${formatPeso(entry.earnings)} · '
-            '${entry.difficultyLabel} · ${entry.bikeName}',
+            '${entry.barkada ? 'BARKADA · ' : ''}${entry.difficultyLabel} · ${entry.bikeName}',
             style: const TextStyle(color: KColors.text, fontSize: 12),
           ),
           if (!identical(longest, entry)) ...[
@@ -340,7 +340,7 @@ class _EntryRow extends StatelessWidget {
                   style: const TextStyle(color: KColors.text, fontWeight: FontWeight.w800, fontSize: 15),
                 ),
                 Text(
-                  '${entry.difficultyLabel} · ${entry.bikeName} · ${_date(entry.timestamp)}',
+                  '${entry.barkada ? 'BARKADA · ' : ''}${entry.difficultyLabel} · ${entry.bikeName} · ${_date(entry.timestamp)}',
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: KColors.muted, fontSize: 11),
                 ),

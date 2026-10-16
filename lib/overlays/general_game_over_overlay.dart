@@ -86,7 +86,7 @@ class GameOverPanel extends StatelessWidget {
                           if (result != null) ...[
                             const Divider(),
                             _line(
-                              'Score (${game.profile.data.playerName})',
+                              'Score (${game.barkada?.currentName ?? game.profile.data.playerName})',
                               formatScore(result.score),
                               big: true,
                               color: KColors.yellow,
@@ -112,33 +112,50 @@ class GameOverPanel extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    ArcadeButton(label: 'RESTART', icon: Icons.replay_rounded, onPressed: game.restartRun),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ArcadeButton(
-                            label: 'GARAGE',
-                            icon: Icons.garage_rounded,
-                            color: KColors.blue,
-                            textColor: Colors.white,
-                            fontSize: 15,
-                            onPressed: game.openGarage,
+                    if (game.barkada case final session?) ...[
+                      ArcadeButton(
+                        label: session.isLastTurn ? 'SEE RESULTS' : 'NEXT: ${session.names[session.turn + 1]}',
+                        icon: session.isLastTurn ? Icons.emoji_events_rounded : Icons.skip_next_rounded,
+                        onPressed: game.onBarkadaNext,
+                      ),
+                      const SizedBox(height: 10),
+                      ArcadeButton(
+                        label: 'QUIT RACE',
+                        icon: Icons.home_rounded,
+                        color: const Color(0xFF546E7A),
+                        textColor: Colors.white,
+                        fontSize: 15,
+                        onPressed: game.exitToMenu,
+                      ),
+                    ] else ...[
+                      ArcadeButton(label: 'RESTART', icon: Icons.replay_rounded, onPressed: game.restartRun),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ArcadeButton(
+                              label: 'GARAGE',
+                              icon: Icons.garage_rounded,
+                              color: KColors.blue,
+                              textColor: Colors.white,
+                              fontSize: 15,
+                              onPressed: game.openGarage,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: ArcadeButton(
-                            label: 'MENU',
-                            icon: Icons.home_rounded,
-                            color: const Color(0xFF546E7A),
-                            textColor: Colors.white,
-                            fontSize: 15,
-                            onPressed: game.exitToMenu,
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ArcadeButton(
+                              label: 'MENU',
+                              icon: Icons.home_rounded,
+                              color: const Color(0xFF546E7A),
+                              textColor: Colors.white,
+                              fontSize: 15,
+                              onPressed: game.exitToMenu,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

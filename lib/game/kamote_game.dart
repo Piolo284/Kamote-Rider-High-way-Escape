@@ -7,6 +7,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart' show AppLifecycleState, KeyEventResult;
 
+import '../models/barkada_model.dart';
 import '../models/mission_model.dart';
 import '../services/audio_service.dart';
 import '../services/mission_service.dart';
@@ -59,8 +60,9 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     this.loadSprites = true,
     this.autoStart = true,
     DifficultyLevel? difficultyLevel,
-  }) : _random = random ?? math.Random(),
-       difficulty = DifficultyConfig.of(difficultyLevel ?? profile.settings.lastDifficulty),
+    this.barkada,
+  }) : _random = random ?? (barkada != null ? math.Random(barkada.seed) : math.Random()),
+       difficulty = DifficultyConfig.of(barkada?.difficulty ?? difficultyLevel ?? profile.settings.lastDifficulty),
        super(world: HighwayWorld());
 
   static const String hudOverlay = 'hud';
@@ -69,6 +71,7 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
   static const String ambulanceOverlay = 'ambulance';
   static const String fuelOverlay = 'outOfFuel';
   static const String gameOverOverlay = 'gameOver';
+  static const String barkadaTurnOverlay = 'barkadaTurn';
   static const List<String> endOverlays = [jailOverlay, ambulanceOverlay, fuelOverlay, gameOverOverlay];
 
   final PlayerProfile profile;
@@ -77,6 +80,9 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
   final bool loadSprites;
   final bool autoStart;
   final math.Random _random;
+
+  /// Set when this run is one turn of a Barkada Race.
+  final BarkadaSession? barkada;
 
   final SpriteOverrides sprites = SpriteOverrides();
   final HudModel hud = HudModel();
@@ -119,6 +125,9 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
   /// Navigation hooks supplied by the game screen.
   VoidCallback? onExitToMenu;
   VoidCallback? onOpenGarage;
+
+  /// Barkada Race: hands the phone to the next player (or shows results).
+  VoidCallback? onBarkadaNext;
 
   // Layout.
   double viewHeight = 800;
@@ -295,6 +304,8 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
   }
 
   void restartRun() {
+    // A Barkada turn is played once; no do-overs.
+    if (barkada != null) return;
     _abandonLiveRun();
     startRun();
   }
@@ -934,7 +945,23 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
       bestCombo: combo.bestCombo,
       difficultyLabel: difficulty.label,
     );
-    if (result != null) lastSummary = profile.applyRun(result);
+    if (result != null) {
+      lastSummary = profile.applyRun(result, playerName: barkada?.currentName);
+      barkada?.record(
+        BarkadaResult(
+          score: result.score,
+          distanceMeters: result.distanceMeters,
+          earnings: result.totalEarnings,
+          ending: switch (state.endReason) {
+            EndReason.headOnCrash => 'Crashed',
+            EndReason.ticketAndJail => 'Caught by the LTO',
+            EndReason.outOfFuel => 'Out of fuel',
+            EndReason.quit || null => 'Quit',
+          },
+          tunnelTrips: underground.trips,
+        ),
+      );
+    }
     return lastSummary;
   }
 

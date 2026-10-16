@@ -8,6 +8,7 @@ class LeaderboardEntry {
     required this.difficultyLabel,
     required this.bikeName,
     required this.timestamp,
+    this.barkada = false,
   });
 
   final String playerName;
@@ -17,6 +18,9 @@ class LeaderboardEntry {
   final String difficultyLabel;
   final String bikeName;
   final DateTime timestamp;
+
+  /// Set for runs played in a Barkada Race (pass-and-play multiplayer).
+  final bool barkada;
 
   /// Score rewards both how far the rider got and what they earned on the
   /// way. Earnings already include the difficulty reward multiplier.
@@ -30,6 +34,7 @@ class LeaderboardEntry {
     'diff': difficultyLabel,
     'bike': bikeName,
     'at': timestamp.millisecondsSinceEpoch,
+    if (barkada) 'mode': 'barkada',
   };
 
   /// Returns null for unreadable entries so one bad row never wipes the board.
@@ -53,6 +58,7 @@ class LeaderboardEntry {
       difficultyLabel: readString('diff', 'MEDIUM'),
       bikeName: readString('bike', '-'),
       timestamp: at is int ? DateTime.fromMillisecondsSinceEpoch(at) : DateTime.fromMillisecondsSinceEpoch(0),
+      barkada: raw['mode'] == 'barkada',
     );
   }
 }

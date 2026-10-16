@@ -135,13 +135,30 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            ArcadeButton(
-                              label: 'LEADERBOARD',
-                              icon: Icons.leaderboard_rounded,
-                              color: const Color(0xFFF57C00),
-                              textColor: Colors.white,
-                              fontSize: 16,
-                              onPressed: () => _open(Routes.leaderboard),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ArcadeButton(
+                                    label: 'BARKADA',
+                                    icon: Icons.groups_rounded,
+                                    color: const Color(0xFF7C4DFF),
+                                    textColor: Colors.white,
+                                    fontSize: 15,
+                                    onPressed: () => _open(Routes.barkada),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ArcadeButton(
+                                    label: 'RANKS',
+                                    icon: Icons.leaderboard_rounded,
+                                    color: const Color(0xFFF57C00),
+                                    textColor: Colors.white,
+                                    fontSize: 15,
+                                    onPressed: () => _open(Routes.leaderboard),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 12),
                             Row(

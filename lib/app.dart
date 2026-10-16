@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'game/difficulty_config.dart';
+import 'models/barkada_model.dart';
+import 'screens/barkada_screens.dart';
 import 'screens/collection_screen.dart';
 import 'screens/difficulty_screen.dart';
 import 'screens/game_screen.dart';
@@ -23,6 +25,8 @@ class Routes {
   static const collection = '/collection';
   static const leaderboard = '/leaderboard';
   static const settings = '/settings';
+  static const barkada = '/barkada';
+  static const barkadaResults = '/barkada/results';
 }
 
 class KamoteApp extends StatelessWidget {
@@ -51,7 +55,12 @@ class KamoteApp extends StatelessWidget {
         onGenerateRoute: (settings) {
           final Widget page = switch (settings.name) {
             Routes.difficulty => const DifficultyScreen(),
-            Routes.play => GameScreen(difficulty: settings.arguments as DifficultyLevel?),
+            Routes.play => switch (settings.arguments) {
+              final BarkadaSession session => GameScreen(barkada: session),
+              final args => GameScreen(difficulty: args as DifficultyLevel?),
+            },
+            Routes.barkada => const BarkadaSetupScreen(),
+            Routes.barkadaResults => BarkadaResultsScreen(session: settings.arguments! as BarkadaSession),
             Routes.garage => GarageScreen(initialBikeId: settings.arguments as String?),
             Routes.missions => const MissionScreen(),
             Routes.collection => const CollectionScreen(),

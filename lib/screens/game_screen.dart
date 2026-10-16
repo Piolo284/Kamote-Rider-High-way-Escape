@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../app.dart';
 import '../game/difficulty_config.dart';
 import '../game/kamote_game.dart';
+import '../models/barkada_model.dart';
+import '../overlays/barkada_turn_overlay.dart';
 import '../overlays/ambulance_overlay.dart';
 import '../overlays/fuel_game_over_overlay.dart';
 import '../overlays/game_hud.dart';
@@ -15,10 +17,13 @@ import '../widgets/ui_kit.dart';
 
 /// Hosts one [KamoteGame] instance for as long as the route is open.
 class GameScreen extends StatefulWidget {
-  const GameScreen({super.key, this.difficulty});
+  const GameScreen({super.key, this.difficulty, this.barkada});
 
   /// Difficulty chosen on the difficulty screen (defaults to the last one).
   final DifficultyLevel? difficulty;
+
+  /// Set when this screen hosts one turn of a Barkada Race.
+  final BarkadaSession? barkada;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -44,9 +49,13 @@ class _GameScreenState extends State<GameScreen> {
             missions: services.missions,
             audio: services.audio,
             difficultyLevel: widget.difficulty,
+            barkada: widget.barkada,
+            // Barkada turns start when the next player taps START.
+            autoStart: widget.barkada == null,
           )
           ..onExitToMenu = _leaveToMenu
-          ..onOpenGarage = _leaveToGarage;
+          ..onOpenGarage = _leaveToGarage
+          ..onBarkadaNext = _nextBarkadaTurn;
   }
 
   void _leaveToMenu() {
@@ -59,6 +68,18 @@ class _GameScreenState extends State<GameScreen> {
     if (_leaving || !mounted) return;
     _leaving = true;
     Navigator.of(context).pushReplacementNamed(Routes.garage);
+  }
+
+  void _nextBarkadaTurn() {
+    final session = widget.barkada;
+    if (_leaving || !mounted || session == null) return;
+    _leaving = true;
+    final nav = Navigator.of(context);
+    if (session.advance()) {
+      nav.pushReplacementNamed(Routes.play, arguments: session);
+    } else {
+      nav.pushReplacementNamed(Routes.barkadaResults, arguments: session);
+    }
   }
 
   @override
@@ -114,7 +135,9 @@ class _GameScreenState extends State<GameScreen> {
           child: GameWidget<KamoteGame>(
             game: game,
             loadingBuilder: (_) => const _Loading(),
+            initialActiveOverlays: widget.barkada != null ? const [KamoteGame.barkadaTurnOverlay] : const [],
             overlayBuilderMap: {
+              KamoteGame.barkadaTurnOverlay: (context, g) => BarkadaTurnOverlay(game: g),
               KamoteGame.hudOverlay: (context, g) => GameHud(game: g),
               KamoteGame.pauseOverlay: (context, g) => PauseOverlay(game: g),
               KamoteGame.jailOverlay: (context, g) => TicketJailOverlay(game: g),

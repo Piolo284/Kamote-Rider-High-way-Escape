@@ -85,13 +85,15 @@ class PlayerProfile extends ChangeNotifier {
 
   /// Banks a run result into the wallet and records. Callers must guarantee
   /// a given run is applied once (see `RewardSystem.finalize`).
-  RunSummary applyRun(RunResult result) {
+  /// [playerName] credits a Barkada Race turn to that friend on the
+  /// leaderboard instead of the device's rider name.
+  RunSummary applyRun(RunResult result, {String? playerName}) {
     final isNewBest = result.distanceMeters > _data.bestDistance;
     _data.wallet += result.totalEarnings;
     _data.totalDistance += result.distanceMeters;
     if (isNewBest) _data.bestDistance = result.distanceMeters;
     _data.runsPlayed += 1;
-    final rank = _recordOnLeaderboard(result);
+    final rank = _recordOnLeaderboard(result, playerName: playerName);
     commit();
     return RunSummary(
       result: result,
@@ -104,19 +106,20 @@ class PlayerProfile extends ChangeNotifier {
 
   /// Adds the run to the leaderboard. Returns its rank (null if trimmed off)
   /// and whether it beat the previous top score.
-  (int?, bool) _recordOnLeaderboard(RunResult result) {
+  (int?, bool) _recordOnLeaderboard(RunResult result, {String? playerName}) {
     // Skip empty runs (e.g. quitting on the start line) so they don't clutter the board.
     if (result.distanceMeters < 1) return (null, false);
     final board = _data.leaderboard;
     final previousTop = board.isEmpty ? null : board.first.score;
     final entry = LeaderboardEntry(
-      playerName: _data.playerName,
+      playerName: playerName == null ? _data.playerName : Leaderboard.cleanName(playerName),
       score: result.score,
       distanceMeters: result.distanceMeters,
       earnings: result.totalEarnings,
       difficultyLabel: result.difficultyLabel,
       bikeName: selectedBike.name,
       timestamp: DateTime.now(),
+      barkada: playerName != null,
     );
     board.add(entry);
     Leaderboard.trim(board);
