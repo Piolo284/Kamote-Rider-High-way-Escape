@@ -25,9 +25,15 @@ class AnimalCrossingManager {
     AnimalKind.dog: 'DOG DODGE',
     AnimalKind.cat: 'CAT DODGE',
     AnimalKind.chicken: 'CHICKEN DODGE',
+    AnimalKind.pedestrian: 'PEDESTRIAN DODGE',
   };
 
-  static const Map<AnimalKind, int> rewards = {AnimalKind.dog: 30, AnimalKind.cat: 35, AnimalKind.chicken: 30};
+  static const Map<AnimalKind, int> rewards = {
+    AnimalKind.dog: 30,
+    AnimalKind.cat: 35,
+    AnimalKind.chicken: 30,
+    AnimalKind.pedestrian: 25,
+  };
 
   bool get animalActive => game.world.children.any((c) => c is RoadAnimal);
 

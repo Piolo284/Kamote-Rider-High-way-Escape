@@ -84,7 +84,10 @@ void main() {
     services.profile.applyRun(_run(5000));
 
     await tester.pumpWidget(
-      AppServicesScope(services: services, child: const MaterialApp(home: LeaderboardScreen())),
+      AppServicesScope(
+        services: services,
+        child: const MaterialApp(home: LeaderboardScreen()),
+      ),
     );
     expect(find.text('TOP SCORER'), findsOneWidget);
     expect(find.text('Maria Clara'), findsNWidgets(2));

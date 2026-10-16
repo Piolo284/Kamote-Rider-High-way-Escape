@@ -8,6 +8,7 @@ import '../components/cash_collectible.dart';
 import '../components/effects.dart';
 import '../components/fuel_collectible.dart';
 import '../components/lto_officer.dart';
+import '../components/manhole.dart';
 import '../components/player_motorcycle.dart';
 import '../components/road_animal.dart';
 import '../components/road_obstacle.dart';
@@ -16,12 +17,15 @@ import '../components/traffic_vehicle.dart';
 import '../environments.dart';
 import '../game_config.dart';
 import '../kamote_game.dart';
+import '../painting/vehicle_painter.dart' show VehiclePainter;
+import '../systems/underground_system.dart';
 import 'camera3d.dart';
 import 'prop_view.dart';
 import 'rider_view.dart';
 import 'shapes.dart';
 import 'sky.dart';
 import 'small_views.dart';
+import 'tunnel_view.dart';
 import 'vehicle_view.dart';
 
 /// Draws the whole game from the chase camera behind the rider.
@@ -50,13 +54,15 @@ class SceneRenderer {
 
   void update(double dt) {
     _time += dt;
-    final env = game.distance.environmentIndex % Environments.all.length;
+    final env = game.visualEnvironmentIndex;
     if (_env < 0) {
       _env = env;
     } else if (env != _env) {
+      final tunnel = env == Environments.undergroundIndex || _env == Environments.undergroundIndex;
       _previousEnv = _env;
       _env = env;
-      _blend = 0;
+      // Tunnel trips cut through black, so there is nothing to cross-fade.
+      _blend = tunnel ? 1 : 0;
     }
     if (_blend < 1) _blend = math.min(1, _blend + dt / 2.5);
   }
@@ -78,12 +84,23 @@ class SceneRenderer {
     canvas.save();
     canvas.clipRect(Rect.fromLTWH(0, 0, size.x, size.y));
 
-    if (_blend < 1) _sky.paint(canvas, cam, _previousEnv, _time);
-    _sky.paint(canvas, cam, env, _time, alpha: _blend);
-    _groundBase(canvas, Environments.at(env));
-    _road(canvas);
-    _horizonHaze(canvas, env);
-    _guardrails(canvas);
+    final tunnel = env == Environments.undergroundIndex;
+    final underground = game.underground;
+    if (tunnel) {
+      _groundBase(canvas, Environments.visual(env));
+      _road(canvas);
+      final exitGlow = underground.phase == UndergroundPhase.rising
+          ? 1.0
+          : ((5 - underground.remaining) / 5).clamp(0.0, 1.0);
+      TunnelView.structure(canvas, cam, scroll: game.road.scroll, viewHeight: game.viewHeight, exitGlow: exitGlow);
+    } else {
+      if (_blend < 1) _sky.paint(canvas, cam, _previousEnv, _time);
+      _sky.paint(canvas, cam, env, _time, alpha: _blend);
+      _groundBase(canvas, Environments.visual(env));
+      _road(canvas);
+      _horizonHaze(canvas, env);
+      _guardrails(canvas);
+    }
 
     _collect();
     _drawables.sort((a, b) => a.sortY.compareTo(b.sortY));
@@ -91,6 +108,8 @@ class SceneRenderer {
       d.draw(canvas);
     }
     _drawables.clear();
+
+    if (tunnel) _tunnelLighting(canvas);
 
     for (final e in _effects) {
       switch (e) {
@@ -115,7 +134,49 @@ class SceneRenderer {
     game.speedLines.render(canvas);
     canvas.restore();
 
+    // Falling into (or climbing out of) the manhole fades through black.
+    final blackout = underground.blackout;
+    if (blackout > 0.001) {
+      _p.color = Color.fromRGBO(0, 0, 0, blackout.clamp(0.0, 1.0));
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.x, size.y), _p);
+    }
+
     canvas.restore();
+  }
+
+  void _tunnelLighting(Canvas canvas) {
+    final lamps = <Offset>[];
+    final trainLights = <Offset>[];
+    for (final child in game.world.children) {
+      if (child is SceneryProp && child.type == PropType.tunnelLamp) {
+        lamps.add(Offset(child.x, child.y));
+      } else if (child is RoadAnimal && child.kind == AnimalKind.pedestrian) {
+        // Reflective vests: crossing pedestrians always show up in the dark.
+        lamps.add(Offset(child.x, child.y));
+      } else if (child is TrafficVehicle && child.type == VehicleType.lrt && child.oncoming && _fade(child.y) > 0) {
+        final front = child.y + child.height / 2;
+        trainLights
+          ..add(Offset(child.x - VehiclePainter.sizeOf(VehicleType.lrt).width / 2 + 8, front))
+          ..add(Offset(child.x + VehiclePainter.sizeOf(VehicleType.lrt).width / 2 - 8, front));
+      }
+    }
+    final player = game.player;
+    TunnelView.darkness(
+      canvas,
+      cam,
+      rider: Offset(player.x, player.y),
+      headlight: !player.isCrashed,
+      lamps: lamps,
+      trainLights: trainLights,
+    );
+    TunnelView.glows(
+      canvas,
+      cam,
+      scroll: game.road.scroll,
+      viewHeight: game.viewHeight,
+      lamps: lamps,
+      trainLights: trainLights,
+    );
   }
 
   // ------------------------------------------------------------ ground
@@ -170,6 +231,7 @@ class SceneRenderer {
   }
 
   void _horizonHaze(Canvas c, int env) {
+    if (env == Environments.undergroundIndex) return;
     final hz = cam.horizonY;
     final depth = cam.height * 0.1;
     final color = SkyPainter.horizonColor(env);
@@ -281,10 +343,29 @@ class SceneRenderer {
           _add(child.y + child.height / 2, (c) => VehicleView.drawAmbulance(c, cam, child));
         case PlayerMotorcycle():
           _add(child.y, (c) => _drawPlayer(c, child));
+        case OpenManhole():
+          _add(-1e9 + child.y, (c) => _drawManhole(c, child));
         case FloatingText() || ImpactBurst() || PickupSparkle() || OncomingWarning():
           _effects.add(child as PositionComponent);
       }
     }
+  }
+
+  void _drawManhole(Canvas c, OpenManhole hole) {
+    Shapes.decal(c, cam, Rect.fromCenter(center: Offset(hole.x, hole.y), width: hole.width, height: hole.height), (c) {
+      c.translate(hole.x - hole.width / 2, hole.y - hole.height / 2);
+      hole.render(c);
+    });
+    // A faint purple shimmer rising from the shaft hints at the secret.
+    final pulse = 0.5 + 0.5 * math.sin(_time * 4);
+    Shapes.billboard(c, cam, hole.x - hole.width * 0.14, hole.y, 22, 26, (c, s) {
+      _p.shader = ui.Gradient.linear(Offset(0, s.height), Offset.zero, [
+        Color.fromRGBO(179, 136, 255, 0.35 + 0.25 * pulse),
+        const Color(0x00B388FF),
+      ]);
+      c.drawRect(Rect.fromLTWH(0, 0, s.width, s.height), _p);
+      _p.shader = null;
+    });
   }
 
   void _drawPlayer(Canvas c, PlayerMotorcycle player) {
@@ -304,6 +385,7 @@ class SceneRenderer {
       opacity: player.isCrashed ? 1 : player.opacity,
       braking: player.braking,
       anim: player.isCrashed ? 0 : player.wheelTravel,
+      sink: game.underground.phase == UndergroundPhase.falling ? game.underground.progress : 0,
     );
   }
 }

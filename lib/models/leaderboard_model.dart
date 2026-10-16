@@ -20,8 +20,7 @@ class LeaderboardEntry {
 
   /// Score rewards both how far the rider got and what they earned on the
   /// way. Earnings already include the difficulty reward multiplier.
-  static int scoreFor({required double distanceMeters, required int earnings}) =>
-      distanceMeters.floor() + earnings;
+  static int scoreFor({required double distanceMeters, required int earnings}) => distanceMeters.floor() + earnings;
 
   Map<String, dynamic> toJson() => {
     'name': playerName,

@@ -18,6 +18,7 @@ import 'components/environment_manager.dart';
 import 'components/fuel_collectible.dart';
 import 'components/highway_entity.dart';
 import 'components/lto_officer.dart';
+import 'components/manhole.dart';
 import 'components/player_motorcycle.dart';
 import 'components/road_animal.dart';
 import 'components/road_obstacle.dart';
@@ -41,6 +42,8 @@ import 'systems/highway_challenge_manager.dart';
 import 'systems/meme_event_manager.dart';
 import 'systems/reward_system.dart';
 import 'systems/traffic_spawner.dart';
+import 'systems/underground_manager.dart';
+import 'systems/underground_system.dart';
 
 /// Kamote Rider: Highway Escape — the Flame game.
 ///
@@ -88,6 +91,7 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
   late final MemeEventManager memes = MemeEventManager(random: _random);
   final ComboSystem combo = ComboSystem();
   final ChallengeRewardManager challengeRewards = ChallengeRewardManager();
+  final UndergroundSystem underground = UndergroundSystem();
 
   /// Difficulty for every run started by this game instance. Chosen on the
   /// difficulty screen before the game opens; never changes mid-run.
@@ -100,6 +104,7 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
   late final EnvironmentManager environment;
   late final HighwayChallengeManager challenges;
   late final AtmosphereLayer atmosphere;
+  late final UndergroundManager tunnels;
   late final RoadEdge _leftEdge;
   late final RoadEdge _rightEdge;
   LtoOfficer? _officer;
@@ -148,6 +153,9 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
   RunSummary? lastSummary;
 
   GameStatus get status => state.status(chaseActive: chase.active);
+
+  /// The world on screen: the distance-based surface world, or the tunnel.
+  int get visualEnvironmentIndex => underground.showsTunnel ? Environments.undergroundIndex : distance.environmentIndex;
   double get cleanMeters => _cleanMeters;
 
   // ------------------------------------------------------------ lifecycle
@@ -165,11 +173,12 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     environment = EnvironmentManager(random: _random);
     challenges = HighwayChallengeManager(random: _random);
     atmosphere = AtmosphereLayer(random: _random);
+    tunnels = UndergroundManager(random: _random);
     _leftEdge = RoadEdge(isLeft: true);
     _rightEdge = RoadEdge(isLeft: false);
     _persistent = {road, _leftEdge, _rightEdge, player, atmosphere, _speedLines};
     await world.addAll(_persistent);
-    await addAll([environment, spawner, challenges]);
+    await addAll([environment, spawner, challenges, tunnels]);
     _layout();
     if (autoStart) startRun();
   }
@@ -230,6 +239,8 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     memes.reset();
     combo.reset();
     challengeRewards.reset();
+    underground.reset();
+    tunnels.reset();
     speedKmh = 0;
     trafficFlow = 1;
     runTime = 0;
@@ -364,9 +375,22 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
 
   void _simulateRun(double dt) {
     runTime += dt;
+    switch (underground.update(dt)) {
+      case UndergroundEvent.arrived:
+        _arriveUnderground();
+      case UndergroundEvent.timeUp:
+        hud.toast('LIGHT AHEAD! Climbing out...', color: const Color(0xFFB388FF));
+      case UndergroundEvent.surfaced:
+        _surface();
+      case null:
+        break;
+    }
     final bike = player.bike;
     final target = bike.topSpeedKmh * Difficulty.at(distance.meters, difficulty).speedMultiplier;
-    if (speedKmh < target) {
+    if (underground.phase == UndergroundPhase.falling) {
+      // Dropping down the shaft: the road slows to a crawl.
+      speedKmh = math.max(0, speedKmh - 160 * dt);
+    } else if (speedKmh < target) {
       speedKmh = math.min(target, speedKmh + bike.accelerationKmhPerSec * dt);
     } else {
       speedKmh = math.max(target, speedKmh - 40 * dt);
@@ -431,7 +455,11 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
   /// Called by the rider's hitbox when a contact starts. Pickups are applied
   /// immediately; crashes are queued and resolved once per frame by priority.
   void onPlayerContact(PositionComponent other) {
-    if (!state.acceptsGameplay) return;
+    if (!state.acceptsGameplay || underground.transitioning) return;
+    if (other is OpenManhole) {
+      _fallIntoManhole(other);
+      return;
+    }
     if (other is Collectible) {
       _collect(other);
       return;
@@ -460,7 +488,7 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
 
   void _resolveCollisions() {
     final event = collisions.resolve();
-    if (event == null || !state.acceptsGameplay) return;
+    if (event == null || !state.acceptsGameplay || underground.transitioning) return;
     // Short grace period after a hit: the rider is being knocked aside.
     if (player.isInvulnerable) return;
     final source = event.source as Hazard;
@@ -606,7 +634,7 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
   /// Fired by the environment manager whenever the distance counter moves
   /// into a new world.
   void onEnvironmentChanged(int index, {required bool announce}) {
-    final theme = Environments.at(index);
+    final theme = Environments.visual(index);
     hud.setEnvironment(theme.name, theme.accent);
     if (!announce) return;
     final loop = distance.cycle;
@@ -615,6 +643,71 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
       loop > 0 ? '${theme.tagline} · Loop ${loop + 1}: heavier traffic' : theme.tagline,
       theme.accent,
     );
+  }
+
+  // ------------------------------------------------------------ underground
+
+  void _fallIntoManhole(OpenManhole hole) {
+    if (hole.used || !underground.enter()) return;
+    hole.used = true;
+    // Lock the hole under the rider and brake hard while they drop in.
+    hole
+      ..x = player.x
+      ..y = player.y;
+    speedKmh *= 0.3;
+    player.startInvulnerability(UndergroundSystem.fallSeconds + 1.2);
+    combo.breakCombo();
+    audio.play(Sfx.whoosh);
+    audio.haptic(heavy: true);
+    hud.toast('WAAAH! Nahulog sa manhole!', color: const Color(0xFFB388FF));
+    world.add(FloatingText('WAAAH!', position: Vector2(player.x, player.y - 50), color: const Color(0xFFB388FF)));
+    // The LTO cannot follow you down there.
+    if (chase.cancel()) _onChaseSurvived();
+  }
+
+  void _arriveUnderground() {
+    _rebuildScene();
+    player.startInvulnerability(1.2);
+    tunnels.onArrived();
+    hud.showBanner(
+      'UNDERGROUND TUNNEL',
+      'Survive ${UndergroundSystem.duration.round()} s. Watch the LRT!',
+      Environments.underground.accent,
+    );
+  }
+
+  /// Back on the surface: either the world you left, or a shortcut into
+  /// the next one.
+  void _surface() {
+    final world = (distance.meters / GameConfig.metersPerEnvironment).floor();
+    final shortcut = _random.nextBool();
+    if (shortcut) {
+      final target = (world + 1) * GameConfig.metersPerEnvironment + 5;
+      final km = distance.advance(target - distance.meters);
+      if (km != null) _onKilometer(km);
+    }
+    _rebuildScene();
+    player.startInvulnerability(1.2);
+    final index = distance.environmentIndex;
+    final theme = Environments.at(index);
+    hud.showBanner(
+      'WORLD ${index + 1}: ${theme.name.toUpperCase()}',
+      shortcut ? 'Shortcut! You came out in a new world.' : 'Back on the highway.',
+      theme.accent,
+    );
+  }
+
+  /// Swaps everything on the road for the world now on screen.
+  void _rebuildScene() {
+    world.clearRunEntities(_persistent);
+    _officer = null;
+    audio.stopLoop(LoopSound.siren);
+    collisions.clear();
+    road.reset();
+    spawner.reset();
+    challenges.clearPending();
+    environment.reset();
+    environment.populate(viewHeight);
   }
 
   void _onKilometer(int km) {
@@ -755,6 +848,7 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
         AnimalKind.dog => MemeEvent.dogDodge,
         AnimalKind.cat => MemeEvent.catDodge,
         AnimalKind.chicken => MemeEvent.chickenDodge,
+        AnimalKind.pedestrian => MemeEvent.challengeComplete,
       });
     } else {
       _meme(MemeEvent.challengeComplete);
@@ -867,5 +961,6 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     hud.setRunCash(rewards.runEarnings);
     hud.setChase(active: chase.active, remaining: chase.remaining);
     hud.setInvulnerable(player.isInvulnerable);
+    hud.setUnderground(active: underground.showsTunnel, remaining: underground.remaining);
   }
 }

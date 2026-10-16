@@ -22,7 +22,7 @@ class EnvironmentManager extends Component with HasGameReference<KamoteGame> {
   int _liveProps = 0;
   int _generation = 0;
 
-  EnvironmentTheme get theme => Environments.at(_currentIndex < 0 ? 0 : _currentIndex);
+  EnvironmentTheme get theme => Environments.visual(_currentIndex < 0 ? 0 : _currentIndex);
 
   void reset() {
     _currentIndex = -1;
@@ -65,11 +65,13 @@ class EnvironmentManager extends Component with HasGameReference<KamoteGame> {
   }
 
   void _sync() {
-    final index = game.distance.environmentIndex;
+    final index = game.visualEnvironmentIndex;
     if (index == _currentIndex) return;
     final first = _currentIndex < 0;
+    final tunnel = index == Environments.undergroundIndex || _currentIndex == Environments.undergroundIndex;
     _currentIndex = index;
-    game.onEnvironmentChanged(index, announce: !first);
+    // Tunnel trips show their own banners.
+    game.onEnvironmentChanged(index, announce: !first && !tunnel);
   }
 
   void _spawnProp(bool left, double y) {

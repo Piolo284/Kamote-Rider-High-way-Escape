@@ -72,9 +72,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       listenable: profile,
       builder: (context, _) {
         final all = profile.data.leaderboard;
-        final rows = _bestPerPlayer
-            ? Leaderboard.bestPerPlayer(all, _sort)
-            : Leaderboard.sorted(all, _sort);
+        final rows = _bestPerPlayer ? Leaderboard.bestPerPlayer(all, _sort) : Leaderboard.sorted(all, _sort);
         final topScorer = all.isEmpty ? null : Leaderboard.sorted(all, LeaderboardSort.score).first;
         final longest = all.isEmpty ? null : Leaderboard.sorted(all, LeaderboardSort.distance).first;
         return KScaffold(
@@ -236,7 +234,12 @@ class _TopScorerCard extends StatelessWidget {
                   children: [
                     const Text(
                       'TOP SCORER',
-                      style: TextStyle(color: KColors.yellow, fontSize: 12, letterSpacing: 3, fontWeight: FontWeight.w900),
+                      style: TextStyle(
+                        color: KColors.yellow,
+                        fontSize: 12,
+                        letterSpacing: 3,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     Text(
                       entry.playerName,

@@ -23,6 +23,7 @@ class VehiclePainter {
     VehicleType.bus => const Size(56, 132),
     VehicleType.truck => const Size(54, 122),
     VehicleType.tricycle => const Size(44, 60),
+    VehicleType.lrt => const Size(56, 190),
   };
 
   /// Forward cruising speed (km/h) for same-direction traffic.
@@ -35,6 +36,7 @@ class VehiclePainter {
     VehicleType.bus => 42,
     VehicleType.truck => 36,
     VehicleType.tricycle => 28,
+    VehicleType.lrt => 44,
   };
 
   static const List<Color> carColors = [
@@ -54,6 +56,7 @@ class VehiclePainter {
     VehicleType.bus => const [Color(0xFF1565C0), Color(0xFFF4511E), Color(0xFF00897B)][variant % 3],
     VehicleType.truck => const [Color(0xFFE53935), Color(0xFF1E88E5), Color(0xFFFFB300)][variant % 3],
     VehicleType.tricycle => const [Color(0xFF1E88E5), Color(0xFFE53935), Color(0xFF43A047)][variant % 3],
+    VehicleType.lrt => const [Color(0xFFECEFF1), Color(0xFFE0F2F1), Color(0xFFEDE7F6)][variant % 3],
     _ => carColors[variant % carColors.length],
   };
 
@@ -84,7 +87,7 @@ class VehiclePainter {
     }
 
     // Headlight beams spilling ahead of the vehicle.
-    if (type != VehicleType.tricycle) {
+    if (type != VehicleType.tricycle && type != VehicleType.lrt) {
       final beam = Path()
         ..moveTo(w * 0.15, 2)
         ..lineTo(w * 0.3, 2)
@@ -117,6 +120,8 @@ class VehiclePainter {
         _tricycle(canvas, w, h, color);
       case VehicleType.suv:
         _suv(canvas, w, h, color, blinkPhase);
+      case VehicleType.lrt:
+        _lrt(canvas, w, h, color);
     }
 
     if (braking) {
@@ -323,6 +328,29 @@ class VehiclePainter {
     c.drawRect(Rect.fromLTWH(w * 0.44, h * 0.4, w * 0.46, 3), _p);
     _p.color = const Color(0xFFD50000);
     c.drawRect(Rect.fromLTWH(w * 0.42, h - 3, 5, 2.5), _p);
+  }
+
+  /// Short two-car light-rail train seen from above.
+  static void _lrt(Canvas c, double w, double h, Color color) {
+    _p.color = color;
+    c.drawRRect(RRect.fromLTRBR(0, 0, w, h * 0.49, const Radius.circular(12)), _p);
+    c.drawRRect(RRect.fromLTRBR(0, h * 0.51, w, h, const Radius.circular(12)), _p);
+    _p.color = const Color(0xFF424242);
+    c.drawRect(Rect.fromLTWH(w * 0.2, h * 0.48, w * 0.6, h * 0.04), _p);
+    // Purple line livery along both sides.
+    _p.color = const Color(0xFF7E57C2);
+    c.drawRect(Rect.fromLTWH(0, 10, 4, h - 20), _p);
+    c.drawRect(Rect.fromLTWH(w - 4, 10, 4, h - 20), _p);
+    // Roof AC units and the pantograph.
+    _p.color = const Color(0xFFB0BEC5);
+    for (final y in [h * 0.12, h * 0.33, h * 0.62, h * 0.83]) {
+      c.drawRRect(RRect.fromLTRBR(w * 0.25, y, w * 0.75, y + h * 0.07, const Radius.circular(3)), _p);
+    }
+    _p.color = const Color(0xFF37474F);
+    c.drawRect(Rect.fromLTWH(w * 0.48, h * 0.2, 2, h * 0.1), _p);
+    _p.color = _glass;
+    c.drawRRect(RRect.fromLTRBR(6, 3, w - 6, 10, const Radius.circular(4)), _p);
+    c.drawRRect(RRect.fromLTRBR(6, h - 10, w - 6, h - 3, const Radius.circular(4)), _p);
   }
 
   /// Fictional ambulance used in the head-on ending.

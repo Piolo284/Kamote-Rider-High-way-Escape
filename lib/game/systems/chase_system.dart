@@ -47,6 +47,17 @@ class ChaseSystem {
     return false;
   }
 
+  /// Ends a running chase early (the rider escaped another way).
+  /// Returns false if no chase was running.
+  bool cancel() {
+    if (!_active) return false;
+    _active = false;
+    _remaining = 0;
+    _trigger = null;
+    _survived += 1;
+    return true;
+  }
+
   void reset() {
     _active = false;
     _remaining = 0;

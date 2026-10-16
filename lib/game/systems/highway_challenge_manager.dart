@@ -260,9 +260,17 @@ class HighwayChallengeManager extends Component with HasGameReference<KamoteGame
     started.clear();
   }
 
+  /// Forgets queued challenges and cargo drops (the road was rebuilt).
+  void clearPending() {
+    _drops.clear();
+    _pending = null;
+  }
+
   @override
   void update(double dt) {
     if (!game.state.acceptsGameplay) return;
+    // No highway challenges in the tunnel; it has its own hazards.
+    if (game.underground.active) return;
     _processDrops();
     if (!enabled || game.distance.meters < startMeters) return;
     final now = game.runTime;

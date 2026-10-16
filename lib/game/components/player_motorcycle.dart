@@ -100,7 +100,8 @@ class PlayerMotorcycle extends PositionComponent with HasGameReference<KamoteGam
     _bumpTimer = 0;
   }
 
-  void startInvulnerability(double seconds) => _invulnerable = seconds;
+  /// Grants at least [seconds] of invulnerability (never shortens it).
+  void startInvulnerability(double seconds) => _invulnerable = math.max(_invulnerable, seconds);
 
   void wobble() => _wobble = 0.6;
 

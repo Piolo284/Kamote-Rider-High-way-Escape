@@ -7,7 +7,8 @@ import '../game_config.dart';
 import '../systems/collision_system.dart';
 import 'highway_entity.dart';
 
-enum AnimalKind { dog, cat, chicken }
+/// Things that cross the road. Pedestrians only appear in the tunnel.
+enum AnimalKind { dog, cat, chicken, pedestrian }
 
 /// One leg of an animal's crossing script.
 class PathStep {
@@ -98,10 +99,30 @@ class AnimalPath {
     ]);
   }
 
+  /// Pedestrian: hurries across, freezes halfway, or steps back then dashes.
+  factory AnimalPath.pedestrian(int dir, int variant) {
+    const v = 95.0;
+    return switch (variant % 3) {
+      0 => AnimalPath([PathStep(double.infinity, v * dir)]),
+      1 => AnimalPath([
+        PathStep(_roadWidth * 0.35 / v, v * dir),
+        const PathStep(0.6, 0, alert: true),
+        PathStep(double.infinity, v * 1.4 * dir),
+      ]),
+      _ => AnimalPath([
+        PathStep(_roadWidth * 0.2 / v, v * dir),
+        const PathStep(0.3, 0, alert: true),
+        PathStep(0.35, -v * dir),
+        PathStep(double.infinity, v * 1.6 * dir),
+      ]),
+    };
+  }
+
   factory AnimalPath.forKind(AnimalKind kind, int dir, int variant) => switch (kind) {
     AnimalKind.dog => AnimalPath.dog(dir, variant),
     AnimalKind.cat => AnimalPath.cat(dir, variant),
     AnimalKind.chicken => AnimalPath.chicken(dir, variant),
+    AnimalKind.pedestrian => AnimalPath.pedestrian(dir, variant),
   };
 }
 
@@ -123,6 +144,7 @@ class RoadAnimal extends HighwayEntity with EntityHitbox, Hazard {
       AnimalKind.dog => Vector2(34, 18),
       AnimalKind.cat => Vector2(26, 14),
       AnimalKind.chicken => Vector2(44, 26),
+      AnimalKind.pedestrian => Vector2(20, 16),
     };
   }
 
@@ -130,6 +152,7 @@ class RoadAnimal extends HighwayEntity with EntityHitbox, Hazard {
     AnimalKind.dog => Vector2(46, 28),
     AnimalKind.cat => Vector2(38, 22),
     AnimalKind.chicken => Vector2(50, 33),
+    AnimalKind.pedestrian => Vector2(26, 22),
   };
 
   final AnimalKind kind;
@@ -216,6 +239,8 @@ class RoadAnimal extends HighwayEntity with EntityHitbox, Hazard {
         _cat(canvas);
       case AnimalKind.chicken:
         _chickens(canvas);
+      case AnimalKind.pedestrian:
+        _pedestrian(canvas);
     }
     canvas.restore();
     if (alert || _hop > 0) _bubble(canvas, _hop > 0 ? '!!' : '!');
@@ -315,6 +340,19 @@ class RoadAnimal extends HighwayEntity with EntityHitbox, Hazard {
       _p.color = const Color(0xFFFFB300);
       c.drawRect(Rect.fromLTWH(o.dx + 15, o.dy + 5 + bob * 0.3, 3, 2), _p);
     }
+  }
+
+  void _pedestrian(Canvas c) {
+    // Top-down commuter: shoulders, bag and head, walking right.
+    final w = width;
+    final h = height;
+    _shadow(c);
+    _p.color = const [Color(0xFF1E88E5), Color(0xFFE53935), Color(0xFF43A047), Color(0xFFFFB300)][variant % 4];
+    c.drawRRect(RRect.fromLTRBR(w * 0.25, h * 0.1, w * 0.65, h * 0.9, const Radius.circular(5)), _p);
+    _p.color = const Color(0xFF5D4037);
+    c.drawRect(Rect.fromLTWH(w * 0.2, h * 0.65, w * 0.2, h * 0.25), _p);
+    _p.color = const Color(0xFF3E2723);
+    c.drawCircle(Offset(w * 0.5, h * 0.5), h * 0.22, _p);
   }
 
   void _bubble(Canvas c, String text) {

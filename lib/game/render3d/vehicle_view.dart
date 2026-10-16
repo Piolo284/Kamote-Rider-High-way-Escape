@@ -14,7 +14,7 @@ import 'shapes.dart';
 enum _End { front, rear }
 
 /// What a block of a vehicle represents, which decides its face art.
-enum _Part { body, cabin, upper, hood, cargo, cab, sideCab, bikeFrame, sirenBar }
+enum _Part { body, cabin, upper, hood, cargo, cab, sideCab, bikeFrame, sirenBar, train }
 
 /// One block of a vehicle. [from]..[to] run from the front (0) to the rear
 /// (1); [inset] narrows it on both sides; [xFrom]..[xTo] place it across
@@ -80,6 +80,10 @@ class VehicleView {
     VehicleType.tricycle => const [
       _Block(_Part.bikeFrame, 0.05, 0.95, 0, 18, xFrom: 0.12, xTo: 0.36, wheels: true),
       _Block(_Part.sideCab, 0.05, 0.95, 0, 33, xFrom: 0.38, xTo: 0.96, wheels: true),
+    ],
+    VehicleType.lrt => const [
+      _Block(_Part.train, 0, 0.49, 0, 52, wheels: true),
+      _Block(_Part.train, 0.51, 1, 0, 52, wheels: true),
     ],
   };
 
@@ -339,7 +343,42 @@ class VehicleView {
         c.drawCircle(Offset(w / 2, h * 0.3), 2.2, _p);
       case _Part.sirenBar:
         _sirenBar(c, s, blink);
+      case _Part.train:
+        front ? _trainFront(c, w, h) : _trainRear(c, w, h, braking);
     }
+  }
+
+  static void _trainFront(Canvas c, double w, double h) {
+    // Route sign, wide windscreen and bright headlights.
+    _p.color = const Color(0xFF111111);
+    c.drawRect(Rect.fromLTWH(w * 0.2, 3, w * 0.6, 7), _p);
+    _p.color = const Color(0xFFFFAB00);
+    c.drawRect(Rect.fromLTWH(w * 0.28, 5, w * 0.44, 3), _p);
+    _p.color = _glass;
+    c.drawRRect(RRect.fromLTRBR(4, 12, w - 4, h * 0.5, const Radius.circular(5)), _p);
+    _p.color = _glassHi;
+    c.drawRect(Rect.fromLTWH(w * 0.12, 14, w * 0.1, h * 0.3), _p);
+    _p.color = const Color(0xFF7E57C2);
+    c.drawRect(Rect.fromLTWH(0, h * 0.56, w, 5), _p);
+    _p.color = const Color(0x66FFF59D);
+    c.drawCircle(Offset(8, h * 0.74), 10, _p);
+    c.drawCircle(Offset(w - 8, h * 0.74), 10, _p);
+    _p.color = const Color(0xFFFFFDE7);
+    c.drawCircle(Offset(8, h * 0.74), 4, _p);
+    c.drawCircle(Offset(w - 8, h * 0.74), 4, _p);
+    _p.color = const Color(0xFF263238);
+    c.drawRect(Rect.fromLTWH(w * 0.3, h - 6, w * 0.4, 6), _p);
+  }
+
+  static void _trainRear(Canvas c, double w, double h, bool braking) {
+    _p.color = _glass;
+    c.drawRRect(RRect.fromLTRBR(w * 0.3, 8, w * 0.7, h * 0.7, const Radius.circular(3)), _p);
+    _p.color = const Color(0xFF7E57C2);
+    c.drawRect(Rect.fromLTWH(0, h * 0.56, w * 0.28, 5), _p);
+    c.drawRect(Rect.fromLTWH(w * 0.72, h * 0.56, w * 0.28, 5), _p);
+    _p.color = braking ? const Color(0xFFFF1744) : const Color(0xFFC62828);
+    c.drawRRect(RRect.fromLTRBR(4, h * 0.72, 12, h * 0.8, const Radius.circular(2)), _p);
+    c.drawRRect(RRect.fromLTRBR(w - 12, h * 0.72, w - 4, h * 0.8, const Radius.circular(2)), _p);
   }
 
   static void _tires(Canvas c, double w, double h, {double inset = 3}) {
@@ -584,6 +623,16 @@ class VehicleView {
       case _Part.sideCab:
         _p.color = const Color(0xFFFFF8E1);
         c.drawRect(Rect.fromLTWH(4, h * 0.2, l - 8, h * 0.4), _p);
+      case _Part.train:
+        // Lit windows with doors between them, and the purple line livery.
+        for (var x = 6.0; x < l - 14; x += 16) {
+          _p.color = const Color(0xFFFFF3C4);
+          c.drawRect(Rect.fromLTWH(x, h * 0.16, 11, h * 0.3), _p);
+        }
+        _p.color = Shapes.shade(color, 0.2);
+        c.drawRect(Rect.fromLTWH(l * 0.48, h * 0.12, 8, h * 0.8), _p);
+        _p.color = const Color(0xFF7E57C2);
+        c.drawRect(Rect.fromLTWH(0, h * 0.56, l, 5), _p);
       case _:
         _p.color = const Color(0x22000000);
         c.drawRect(Rect.fromLTWH(0, h * 0.55, l, 1.5), _p);

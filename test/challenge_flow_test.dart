@@ -329,6 +329,8 @@ void main() {
         game.onGameResize(Vector2(400, 860));
         game.fuel.drainPerSecond = 0;
         game.player.startInvulnerability(1e9);
+        // Tunnel trips pause highway challenges; they have their own test.
+        game.tunnels.enabled = false;
         var worst = 0;
         final animals = <RoadAnimal>{};
         for (var frame = 0; frame < 150 * 60; frame++) {

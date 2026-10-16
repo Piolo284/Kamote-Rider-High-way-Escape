@@ -217,7 +217,7 @@ class TrafficSpawner extends Component with HasGameReference<KamoteGame> {
   // ------------------------------------------------------------ spawning
 
   void _spawnRow(Difficulty d) {
-    final env = Environments.at(game.distance.environmentIndex);
+    final env = Environments.visual(game.visualEnvironmentIndex);
     if (_rnd.nextDouble() < d.vehicleChance) _trySpawnVehicle(d, env);
     if (_rnd.nextDouble() < d.obstacleChance) _trySpawnObstacle(env);
   }

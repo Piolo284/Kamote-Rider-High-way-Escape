@@ -57,7 +57,7 @@ class AtmosphereLayer extends Component with HasGameReference<KamoteGame> {
   void update(double dt) {
     if (dt <= 0) return;
     _time += dt;
-    final env = game.distance.environmentIndex;
+    final env = game.visualEnvironmentIndex;
     if (env != _current) {
       _previous = _current;
       _current = env;

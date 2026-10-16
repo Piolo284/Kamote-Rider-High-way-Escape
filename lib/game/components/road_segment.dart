@@ -134,7 +134,7 @@ class RoadComponent extends Component with HasGameReference<KamoteGame> {
     _decor.removeWhere((k, _) => k < first - 3);
   }
 
-  int _envFor(int k) => _segmentEnv.putIfAbsent(k, () => game.distance.environmentIndex);
+  int _envFor(int k) => _segmentEnv.putIfAbsent(k, () => game.visualEnvironmentIndex);
 
   @override
   void render(Canvas canvas) => renderRange(canvas, 0, game.viewHeight);
@@ -151,7 +151,7 @@ class RoadComponent extends Component with HasGameReference<KamoteGame> {
     final last = _segmentAt(yFar);
     // Assign from the far end down so the newest segment gets the current world.
     for (var k = last; k >= first; k--) {
-      visit(Environments.at(_envFor(k)), _segmentTop(k));
+      visit(Environments.visual(_envFor(k)), _segmentTop(k));
     }
   }
 
@@ -163,7 +163,7 @@ class RoadComponent extends Component with HasGameReference<KamoteGame> {
       _envFor(k);
     }
     for (var k = first; k <= last; k++) {
-      _drawSegment(canvas, Environments.at(_segmentEnv[k]!), k, _segmentTop(k));
+      _drawSegment(canvas, Environments.visual(_segmentEnv[k]!), k, _segmentTop(k));
     }
     _drawLaneMarkings(canvas, yFar, yNear);
   }
@@ -189,6 +189,7 @@ class RoadComponent extends Component with HasGameReference<KamoteGame> {
     c.drawRect(Rect.fromLTWH(roadL, rectTop, roadR - roadL, rectH), _p);
 
     _drawWear(c, _decorFor(k, env), top);
+    if (env.underground) _drawRails(c, top);
 
     if (env.crosswalks && k % 6 == 3) {
       _p.color = const Color(0xDDFFFFFF);
@@ -206,6 +207,21 @@ class RoadComponent extends Component with HasGameReference<KamoteGame> {
           c.drawRect(Rect.fromLTWH(railX - 1, top + y, 6, 4), _p);
         }
       }
+    }
+  }
+
+  /// LRT track in every tunnel lane: sleepers under two steel rails.
+  void _drawRails(Canvas c, double top) {
+    const h = segmentHeight;
+    for (var lane = 0; lane < GameConfig.laneCount; lane++) {
+      final cx = GameConfig.laneCenter(lane);
+      _p.color = const Color(0xFF4A4540);
+      for (var y = 4.0; y < h; y += 22) {
+        c.drawRect(Rect.fromLTWH(cx - 22, top + y, 44, 7), _p);
+      }
+      _p.color = const Color(0xFF9EA5AB);
+      c.drawRect(Rect.fromLTWH(cx - 16, top - 1, 3, h + 2), _p);
+      c.drawRect(Rect.fromLTWH(cx + 13, top - 1, 3, h + 2), _p);
     }
   }
 
@@ -284,6 +300,16 @@ class RoadComponent extends Component with HasGameReference<KamoteGame> {
         c.drawRect(Rect.fromLTWH(isLeft ? right - 14 : left, top, 14, h), _p);
         _p.color = const Color(0xAAFFFFFF);
         c.drawRect(Rect.fromLTWH(isLeft ? right - 16 : left + 14, top, 2, h), _p);
+      case GroundStyle.tunnel:
+        // Maintenance walkway with a drain channel and a yellow safety line.
+        _p.color = detail;
+        for (var y = 0.0; y < h; y += 40) {
+          c.drawRect(Rect.fromLTRB(left, top + y, right, top + y + 1.5), _p);
+        }
+        _p.color = const Color(0xFF1E2023);
+        c.drawRect(Rect.fromLTWH(isLeft ? right - 26 : left + 20, top, 6, h), _p);
+        _p.color = const Color(0xFFFFC107);
+        c.drawRect(Rect.fromLTWH(isLeft ? right - 4 : left, top, 4, h), _p);
       case GroundStyle.sand:
         _p.color = const Color(0xFFFFD54F);
         for (var i = 0; i < 14; i++) {

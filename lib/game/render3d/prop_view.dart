@@ -117,6 +117,23 @@ class PropView {
         Shapes.billboard(c, cam, x, y, 56, 30, (c, s) => _boat(c, s, v), lift: -2, alpha: alpha);
       case PropType.flyover:
         _flyover(c, cam, prop, roofArt, alpha);
+      case PropType.tunnelLamp:
+        // Wall lamp; its light pool is cut out of the darkness by the scene.
+        Shapes.billboard(c, cam, x, y, 12, 7, _lampFixture, lift: 78, alpha: alpha);
+      case PropType.pillar:
+        Shapes.box(
+          c,
+          cam,
+          left: x - w / 2,
+          right: x + w / 2,
+          far: y - l / 2,
+          near: y + l / 2,
+          top: 150,
+          color: const Color(0xFF5A5E63),
+          nearFace: _pillarFace,
+          sideFace: _pillarFace,
+          alpha: alpha,
+        );
     }
   }
 
@@ -533,6 +550,36 @@ class PropView {
       },
       alpha: a,
     );
+  }
+
+  static void _lampFixture(Canvas c, Size s) {
+    _p.color = const Color(0xFF37474F);
+    c.drawRect(Rect.fromLTWH(0, 0, s.width, 2), _p);
+    _p.color = const Color(0xFFFFF3C4);
+    c.drawRRect(RRect.fromLTRBR(1, 2, s.width - 1, s.height, const Radius.circular(2)), _p);
+  }
+
+  static void _pillarFace(Canvas c, Size s) {
+    // Black and yellow hazard band at the bottom.
+    c.save();
+    c.clipRect(Rect.fromLTWH(0, s.height - 14, s.width, 14));
+    _p.color = const Color(0xFFFFC107);
+    c.drawRect(Rect.fromLTWH(0, s.height - 14, s.width, 14), _p);
+    _p.color = const Color(0xFF212121);
+    for (var x = -14.0; x < s.width; x += 10) {
+      c.drawPath(
+        Path()
+          ..moveTo(x, s.height)
+          ..lineTo(x + 5, s.height)
+          ..lineTo(x + 19, s.height - 14)
+          ..lineTo(x + 14, s.height - 14)
+          ..close(),
+        _p,
+      );
+    }
+    c.restore();
+    _p.color = const Color(0x22FFFFFF);
+    c.drawRect(Rect.fromLTWH(2, 0, 3, s.height - 14), _p);
   }
 
   // ------------------------------------------------------------ checkpoint

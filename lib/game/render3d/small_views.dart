@@ -167,6 +167,7 @@ class SmallViews {
       AnimalKind.dog => (46.0, 30.0),
       AnimalKind.cat => (36.0, 24.0),
       AnimalKind.chicken => (52.0, 20.0),
+      AnimalKind.pedestrian => (22.0, 44.0),
     };
     final lift = a.hop > 0 ? math.sin(a.hop / 0.4 * math.pi) * 10 : 0.0;
     Shapes.shadow(c, cam, a.x, a.y, w * 0.8, 14, opacity: 0.28 * alpha);
@@ -190,6 +191,8 @@ class SmallViews {
             _cat(c, size, a.variant, a.animPhase);
           case AnimalKind.chicken:
             _chickens(c, size, a.animPhase);
+          case AnimalKind.pedestrian:
+            _pedestrian(c, size, a.variant, a.animPhase);
         }
         c.restore();
         final bubble = a.bubble;
@@ -299,6 +302,42 @@ class SmallViews {
       _p.color = const Color(0xFFFFB300);
       c.drawRect(Rect.fromLTWH(x + 17, h - 16 + bob * 0.3, 2.5, 1.6), _p);
     }
+  }
+
+  /// A commuter walking across, seen from the side (facing right).
+  static void _pedestrian(Canvas c, Size s, int variant, double phase) {
+    const shirts = [Color(0xFF1E88E5), Color(0xFFE53935), Color(0xFF43A047), Color(0xFFFFB300), Color(0xFF8E24AA)];
+    const pants = [Color(0xFF263238), Color(0xFF3E2723), Color(0xFF1A237E)];
+    final w = s.width;
+    final h = s.height;
+    final swing = math.sin(phase * 0.7) * 4;
+    final hip = Offset(w * 0.5, h * 0.58);
+    _s
+      ..color = pants[variant % pants.length]
+      ..strokeWidth = 3.6;
+    c.drawLine(hip, Offset(w * 0.5 + swing, h - 2), _s);
+    c.drawLine(hip, Offset(w * 0.5 - swing, h - 2), _s);
+    _p.color = const Color(0xFF212121);
+    c.drawRect(Rect.fromLTWH(w * 0.5 + swing - 1, h - 3, 5, 3), _p);
+    c.drawRect(Rect.fromLTWH(w * 0.5 - swing - 1, h - 3, 5, 3), _p);
+    final shirt = shirts[variant % shirts.length];
+    _p.color = shirt;
+    c.drawRRect(RRect.fromLTRBR(w * 0.3, h * 0.26, w * 0.7, h * 0.62, const Radius.circular(4)), _p);
+    // Reflective vest stripes.
+    _p.color = const Color(0xFFCCFF90);
+    c.drawRect(Rect.fromLTWH(w * 0.3, h * 0.36, w * 0.4, 2.2), _p);
+    c.drawRect(Rect.fromLTWH(w * 0.3, h * 0.48, w * 0.4, 2.2), _p);
+    // Swinging arm and a shoulder bag.
+    _s
+      ..color = Shapes.shade(shirt, 0.2)
+      ..strokeWidth = 3;
+    c.drawLine(Offset(w * 0.5, h * 0.3), Offset(w * 0.5 - swing, h * 0.55), _s);
+    _p.color = const Color(0xFF6D4C41);
+    c.drawRRect(RRect.fromLTRBR(w * 0.16, h * 0.44, w * 0.36, h * 0.58, const Radius.circular(2)), _p);
+    _p.color = const Color(0xFFD7A982);
+    c.drawCircle(Offset(w * 0.52, h * 0.16), w * 0.2, _p);
+    _p.color = const Color(0xFF3E2723);
+    c.drawArc(Rect.fromCircle(center: Offset(w * 0.52, h * 0.15), radius: w * 0.21), 3.3, 2.8, true, _p);
   }
 
   static void _bubble(Canvas c, Size s, String text) {

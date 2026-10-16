@@ -42,8 +42,9 @@ class RiderView {
     double opacity = 1,
     bool braking = false,
     double anim = 0,
+    double sink = 0,
   }) {
-    _place(c, cam, x, y, roll, opacity, (c) {
+    _place(c, cam, x, y, roll, opacity, sink: sink, (c) {
       paint(
         c,
         style: bike.style,
@@ -81,6 +82,7 @@ class RiderView {
     });
   }
 
+  /// [sink] (0..1) drops the rider down an open manhole, hidden below the road.
   static void _place(
     Canvas c,
     Camera3D cam,
@@ -88,16 +90,21 @@ class RiderView {
     double y,
     double roll,
     double opacity,
-    void Function(Canvas) art,
-  ) {
+    void Function(Canvas) art, {
+    double sink = 0,
+  }) {
     if (!cam.isVisible(y)) return;
-    Shapes.shadow(c, cam, x, y, worldWidth, worldLength * 0.45, opacity: 0.3 * opacity);
+    if (sink <= 0) Shapes.shadow(c, cam, x, y, worldWidth, worldLength * 0.45, opacity: 0.3 * opacity);
     final base = cam.project(x, y);
     final s = cam.scaleAt(y) * designScale;
     c.save();
     c.translate(base.dx, base.dy);
     c.rotate(roll);
     c.scale(s);
+    if (sink > 0) {
+      c.clipRect(const Rect.fromLTRB(-200, -300, 200, 0));
+      c.translate(0, sink * sink * 95);
+    }
     if (opacity < 1) {
       c.saveLayer(const Rect.fromLTWH(-60, -90, 120, 100), Paint()..color = Color.fromRGBO(0, 0, 0, opacity));
       art(c);

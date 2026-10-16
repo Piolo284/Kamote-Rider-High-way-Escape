@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../game/systems/underground_system.dart';
 import '../game/game_config.dart';
 import '../game/hud_model.dart';
 import '../game/kamote_game.dart';
@@ -31,6 +32,7 @@ class GameHud extends StatelessWidget {
                     _TopBar(hud: hud, onPause: game.pauseRun),
                     const SizedBox(height: 6),
                     if (hud.chaseActive) _ChaseBanner(remaining: hud.chaseRemaining),
+                    if (hud.undergroundActive) _UndergroundBanner(remaining: hud.undergroundRemaining),
                     const SizedBox(height: 6),
                     if (hud.announcement != null)
                       _Announcement(key: ValueKey(hud.announcement!.id), banner: hud.announcement!),
@@ -318,6 +320,58 @@ class _ChaseBanner extends StatelessWidget {
               minHeight: 6,
               color: Colors.white,
               backgroundColor: Colors.white24,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Countdown to the tunnel exit.
+class _UndergroundBanner extends StatelessWidget {
+  const _UndergroundBanner({required this.remaining});
+
+  final double remaining;
+
+  static const _purple = Color(0xFF7C4DFF);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      decoration: BoxDecoration(
+        color: const Color(0xE6221A33),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _purple, width: 1.5),
+        boxShadow: [BoxShadow(color: _purple.withValues(alpha: 0.45), blurRadius: 12)],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.subway_rounded, color: Color(0xFFB388FF)),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'UNDERGROUND! Exit in',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15),
+                ),
+              ),
+              Text(
+                '${remaining.toStringAsFixed(1)}s',
+                style: const TextStyle(color: Color(0xFFB388FF), fontWeight: FontWeight.w900, fontSize: 22),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: (remaining / UndergroundSystem.duration).clamp(0.0, 1.0),
+              minHeight: 6,
+              color: const Color(0xFFB388FF),
+              backgroundColor: Colors.white12,
             ),
           ),
         ],

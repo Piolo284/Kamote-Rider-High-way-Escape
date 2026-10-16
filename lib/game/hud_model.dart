@@ -47,6 +47,8 @@ class HudModel extends ChangeNotifier {
   String difficultyLabel = 'MEDIUM';
   Color difficultyColor = const Color(0xFFFFC400);
   int combo = 0;
+  bool undergroundActive = false;
+  double undergroundRemaining = 0;
 
   HudBanner? banner;
 
@@ -74,6 +76,11 @@ class HudModel extends ChangeNotifier {
     _set(active, chaseActive, (v) => chaseActive = v);
     final q = (remaining * 10).ceil() / 10;
     _set(q, chaseRemaining, (v) => chaseRemaining = v);
+  }
+
+  void setUnderground({required bool active, required double remaining}) {
+    _set(active, undergroundActive, (v) => undergroundActive = v);
+    _set((remaining * 10).ceil() / 10, undergroundRemaining, (v) => undergroundRemaining = v);
   }
 
   void setBike(String name) => _set(name, bikeName, (v) => bikeName = v);
@@ -130,6 +137,8 @@ class HudModel extends ChangeNotifier {
     runCash = 0;
     chaseRemaining = 0;
     chaseActive = false;
+    undergroundActive = false;
+    undergroundRemaining = 0;
     invulnerable = false;
     banner = null;
     announcement = null;

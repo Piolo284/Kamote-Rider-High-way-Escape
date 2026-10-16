@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-enum VehicleType { car, taxi, jeepney, bus, truck, tricycle, van, suv }
+enum VehicleType { car, taxi, jeepney, bus, truck, tricycle, van, suv, lrt }
 
 enum ObstacleType { pothole, cone, barrier, box }
 
@@ -20,10 +20,12 @@ enum PropType {
   boat,
   bush,
   flyover,
+  tunnelLamp,
+  pillar,
 }
 
 /// How the ground beside the road is drawn.
-enum GroundStyle { sidewalk, ricefield, forest, cliff, sea, sand, concrete }
+enum GroundStyle { sidewalk, ricefield, forest, cliff, sea, sand, concrete, tunnel }
 
 /// Visual and gameplay settings for one of the five highway worlds.
 class EnvironmentTheme {
@@ -47,6 +49,7 @@ class EnvironmentTheme {
     required this.trafficDensity,
     required this.oncomingShare,
     required this.accent,
+    this.underground = false,
   });
 
   final String name;
@@ -74,6 +77,9 @@ class EnvironmentTheme {
   /// Fraction of vehicles that are oncoming (head-on danger).
   final double oncomingShare;
   final Color accent;
+
+  /// The secret manhole tunnel: dark, with LRT rails in every lane.
+  final bool underground;
 }
 
 class Environments {
@@ -193,5 +199,36 @@ class Environments {
     ),
   ];
 
+  /// Index used for the secret tunnel reached through an open manhole.
+  /// It sits outside [all], so the five surface worlds keep cycling.
+  static const int undergroundIndex = 5;
+
+  static const EnvironmentTheme underground = EnvironmentTheme(
+    name: 'Underground Tunnel',
+    tagline: 'LRT tracks, dim lights, and people crossing',
+    leftGround: GroundStyle.tunnel,
+    rightGround: GroundStyle.tunnel,
+    leftColor: Color(0xFF3A3F45),
+    rightColor: Color(0xFF3A3F45),
+    detailColor: Color(0xFF2E3237),
+    asphalt: Color(0xFF2B2D30),
+    shoulder: Color(0xFF55595E),
+    guardrails: false,
+    crosswalks: false,
+    leftProps: [PropType.tunnelLamp, PropType.pillar],
+    rightProps: [PropType.tunnelLamp, PropType.pillar],
+    propSpacing: 130,
+    vehicleWeights: {VehicleType.lrt: 1},
+    obstacleWeights: {ObstacleType.box: 2, ObstacleType.cone: 1},
+    trafficDensity: 1.0,
+    oncomingShare: 0.4,
+    accent: Color(0xFFB388FF),
+    underground: true,
+  );
+
+  /// Surface world for a distance-based index (wraps around).
   static EnvironmentTheme at(int index) => all[index % all.length];
+
+  /// What is on screen: a surface world, or the tunnel for [undergroundIndex].
+  static EnvironmentTheme visual(int index) => index == undergroundIndex ? underground : at(index);
 }

@@ -30,6 +30,8 @@ class PropPainter {
     PropType.boat => const Size(22, 56),
     PropType.bush => const Size(30, 24),
     PropType.flyover => const Size(1200, 64),
+    PropType.tunnelLamp => const Size(14, 14),
+    PropType.pillar => const Size(22, 22),
   };
 
   static const _roofColors = [
@@ -236,6 +238,16 @@ class PropPainter {
         for (var x = 10.0; x < w; x += 46) {
           c.drawRect(Rect.fromLTWH(x, h / 2 - 1.5, 24, 3), _p);
         }
+      case PropType.tunnelLamp:
+        _p.color = const Color(0x55FFE0B2);
+        c.drawCircle(Offset(w / 2, h / 2), w, _p);
+        _p.color = const Color(0xFFFFE0B2);
+        c.drawRect(Rect.fromLTWH(w * 0.2, h * 0.3, w * 0.6, h * 0.4), _p);
+      case PropType.pillar:
+        _p.color = const Color(0xFF616161);
+        c.drawRect(Rect.fromLTWH(0, 0, w, h), _p);
+        _p.color = const Color(0xFFFFC107);
+        c.drawRect(Rect.fromLTWH(0, 0, w, 3), _p);
     }
   }
 

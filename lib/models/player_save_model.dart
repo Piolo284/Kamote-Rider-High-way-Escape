@@ -172,8 +172,7 @@ class PlayerSaveModel {
     final boardRaw = raw['board'];
     final board = <LeaderboardEntry>[
       if (boardRaw is List)
-        for (final v in boardRaw)
-          ?LeaderboardEntry.fromJson(v),
+        for (final v in boardRaw) ?LeaderboardEntry.fromJson(v),
     ];
     final name = raw['name'];
 
