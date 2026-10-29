@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kamote Rider: Highway Escape</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0C12">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&amp;family=Rubik:wght@400;500;700&amp;display=swap">
+<style>
+body{margin:0;background:#0B0C12;-webkit-tap-highlight-color:transparent}
+a{color:#FFC62E}a:hover{color:#FFE08A}
+.col{width:100%;max-width:520px;margin:0 auto;padding-left:max(18px, env(safe-area-inset-left, 0px));padding-right:max(18px, env(safe-area-inset-right, 0px));box-sizing:border-box}
+.tap:active{transform:scale(0.97)}
+.tap:focus-visible,button:focus-visible{outline:3px solid #3D86FF;outline-offset:3px}
+.rail{scrollbar-width:none}.rail::-webkit-scrollbar{display:none}
+@media (prefers-reduced-motion: reduce){.tap:active{transform:none}}
+</style>
+</head>
+<body>
+<div style="background: #0B0C12; color: #EEF0F5; font-family: 'Rubik', Arial, sans-serif; font-size: 16px; line-height: 1.55; min-height: 100%">
+
+<header style="position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: rgba(11,12,18,0.94); border-bottom: 1px solid #22263A; backdrop-filter: blur(8px)">
+<div class="col" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 10px; padding-bottom: 10px">
+<a href="#top" style="display: flex; align-items: center; gap: 10px; min-height: 44px; text-decoration: none; color: #EEF0F5">
+<span style="display: flex; gap: 3px" aria-hidden="true">
+<span style="width: 18px; height: 7px; background: #FF6B1A; transform: skewX(-24deg)"></span>
+<span style="width: 10px; height: 7px; background: #FFC62E; transform: skewX(-24deg)"></span>
+<span style="width: 5px; height: 7px; background: #3D86FF; transform: skewX(-24deg)"></span>
+</span>
+<span style="font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 20px; letter-spacing: 2px">KAMOTE RIDER</span>
+</a>
+<a class="tap" href="kamote-rider-v1.0.0.apk" aria-label="Download the Kamote Rider APK" style="display: flex; align-items: center; min-height: 44px; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 15px; letter-spacing: 2px; color: #14110A; background: #FFC62E; padding: 0 18px; border-radius: 10px; text-decoration: none">PLAY</a>
+</div>
+<nav aria-label="Sections" class="rail" style="display: flex; gap: 8px; overflow-x: auto; padding: 0 max(18px, env(safe-area-inset-left, 0px)) 10px; max-width: 520px; margin: 0 auto; box-sizing: border-box">
+<a href="#run" style="flex: none; display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; background: #161924; border: 1px solid #2A2F40; color: #D2D6DF; text-decoration: none; font-size: 14px">The Run</a>
+<a href="#features" style="flex: none; display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; background: #161924; border: 1px solid #2A2F40; color: #D2D6DF; text-decoration: none; font-size: 14px">Features</a>
+<a href="#worlds" style="flex: none; display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; background: #161924; border: 1px solid #2A2F40; color: #D2D6DF; text-decoration: none; font-size: 14px">Worlds</a>
+<a href="#difficulty" style="flex: none; display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; background: #161924; border: 1px solid #2A2F40; color: #D2D6DF; text-decoration: none; font-size: 14px">Difficulty</a>
+<a href="#garage" style="flex: none; display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; background: #161924; border: 1px solid #2A2F40; color: #D2D6DF; text-decoration: none; font-size: 14px">Garage</a>
+<a href="#barkada" style="flex: none; display: flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px; background: #161924; border: 1px solid #2A2F40; color: #D2D6DF; text-decoration: none; font-size: 14px">Barkada</a>
+</nav>
+</header>
+
+<section id="top" style="position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 30%, #2A1A14 0%, #0B0C12 70%)">
+<div class="col" style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; padding-top: 32px; padding-bottom: 40px">
+<p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 500; font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: #FFC62E">3D motorcycle endless runner</p>
+<h1 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: clamp(56px, 17vw, 84px); line-height: 0.92; text-transform: uppercase; text-shadow: 0 4px 0 #FF6B1A, 0 0 32px rgba(255,107,26,0.5)">Kamote<br>Rider</h1>
+<p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: clamp(22px, 6.5vw, 30px); letter-spacing: 7px; text-transform: uppercase; color: #FFC62E">Highway Escape</p>
+<p style="margin: 0; font-size: 17px; color: #D2D6DF; max-width: 340px">Outrun the LTO. Dodge traffic. Keep your tank full. Survive the endless highway.</p>
+<div style="position: relative; width: 66%; max-width: 270px; margin-top: 10px">
+<div aria-hidden="true" style="position: absolute; inset: -18px; border-radius: 48px; background: radial-gradient(ellipse at 50% 50%, rgba(255,138,42,0.45) 0%, rgba(255,138,42,0) 70%)"></div>
+<div style="position: relative; border-radius: 34px; padding: 8px; background: #1A1D29; border: 1px solid #353B50; box-shadow: 0 24px 60px rgba(0,0,0,0.6)">
+<img src="img/phone_38.jpg" alt="Real gameplay on a phone: the rider on the Coastal Highway at sunset, with fuel, distance and cash in the HUD" style="display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 27px; max-width: 100%">
+</div>
+</div>
+<p style="margin: 0; font-size: 13px; color: #9EA5B4">Real in-game footage · portrait, one-thumb controls</p>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 100%; padding-top: 6px">
+<a class="tap" href="kamote-rider-v1.0.0.apk" style="display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 56px; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 19px; letter-spacing: 2px; text-transform: uppercase; color: #14110A; background: linear-gradient(90deg, #FFC62E 0%, #FF8A2A 100%); border-radius: 14px; text-decoration: none; box-shadow: 0 0 28px rgba(255,140,40,0.35)">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14110A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="M7 10l5 5 5-5"></path><path d="M5 21h14"></path></svg>
+Download for Android</a>
+<a class="tap" href="#features" style="display: flex; align-items: center; justify-content: center; min-height: 52px; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 17px; letter-spacing: 2px; text-transform: uppercase; color: #EEF0F5; border: 2px solid #3D86FF; border-radius: 14px; text-decoration: none">See the gameplay</a>
+</div>
+<p style="margin: 0; font-size: 13px; color: #9EA5B4">v1.0.0 · 54.6 MB · <a href="https://github.com/Piolo284/Kamote-Rider-High-way-Escape/tree/apk-release/releases">Install steps</a></p>
+<p style="margin: 0; font-size: 13px; color: #9EA5B4">A fictional arcade game. Ride safe in real life.</p>
+</div>
+</section>
+
+<section aria-label="Game at a glance" style="background: #0B0C12">
+<div class="col" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-bottom: 40px">
+<div style="padding: 16px; border-radius: 14px; background: #121521; border: 1px solid #22263A"><p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 36px; line-height: 1; color: #FFC62E">5</p><p style="margin: 6px 0 0; font-size: 14px; color: #B9BFCC">worlds, one per kilometer</p></div>
+<div style="padding: 16px; border-radius: 14px; background: #121521; border: 1px solid #22263A"><p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 36px; line-height: 1; color: #FF8A47">10 s</p><p style="margin: 6px 0 0; font-size: 14px; color: #B9BFCC">LTO chase to survive</p></div>
+<div style="padding: 16px; border-radius: 14px; background: #121521; border: 1px solid #22263A"><p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 36px; line-height: 1; color: #6FA6FF">20 s</p><p style="margin: 6px 0 0; font-size: 14px; color: #B9BFCC">underground tunnel run</p></div>
+<div style="padding: 16px; border-radius: 14px; background: #121521; border: 1px solid #22263A"><p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 36px; line-height: 1; color: #FFC62E">15</p><p style="margin: 6px 0 0; font-size: 14px; color: #B9BFCC">motorcycles to unlock</p></div>
+</div>
+</section>
+
+<section id="run" style="background: #0B0C12">
+<div class="col" style="display: flex; flex-direction: column; gap: 18px; padding-top: 16px; padding-bottom: 48px">
+<p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: #FFC62E">How every run starts</p>
+<h2 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 36px; line-height: 1.05; text-transform: uppercase; text-wrap: balance">From checkpoint to chaos</h2>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px">
+<li style="display: flex; gap: 14px; align-items: flex-start; padding: 14px; border-radius: 16px; background: #161924; border: 1px solid #2A2F40">
+<img src="img/checkpoint.jpg" alt="In-game screenshot: the LTO checkpoint arch" style="width: 112px; height: 84px; flex: none; object-fit: cover; border-radius: 10px">
+<div style="min-width: 0; display: flex; flex-direction: column; gap: 2px"><p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-size: 13px; letter-spacing: 2px; color: #FF8A47">STEP 1</p><h3 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 20px; text-transform: uppercase">The checkpoint</h3><p style="margin: 0; font-size: 15px; color: #B9BFCC">The run opens at an LTO checkpoint. The kamote doesn’t stop.</p></div>
+</li>
+<li style="display: flex; gap: 14px; align-items: flex-start; padding: 14px; border-radius: 16px; background: #161924; border: 1px solid #2A2F40">
+<img src="img/chase.jpg" alt="In-game screenshot: an LTO officer chases the rider" style="width: 112px; height: 84px; flex: none; object-fit: cover; border-radius: 10px">
+<div style="min-width: 0; display: flex; flex-direction: column; gap: 2px"><p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-size: 13px; letter-spacing: 2px; color: #6FA6FF">STEP 2</p><h3 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 20px; text-transform: uppercase">The chase</h3><p style="margin: 0; font-size: 15px; color: #B9BFCC">10 seconds with the officer on your tail. A second side crash means jail.</p></div>
+</li>
+<li style="display: flex; gap: 14px; align-items: flex-start; padding: 14px; border-radius: 16px; background: #161924; border: 1px solid #2A2F40">
+<img src="img/mountain.jpg" alt="In-game screenshot: the open Mountain Road" style="width: 112px; height: 84px; flex: none; object-fit: cover; border-radius: 10px">
+<div style="min-width: 0; display: flex; flex-direction: column; gap: 2px"><p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-size: 13px; letter-spacing: 2px; color: #FFC62E">STEP 3</p><h3 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 20px; text-transform: uppercase">The endless highway</h3><p style="margin: 0; font-size: 15px; color: #B9BFCC">Escape for a ₱75 bonus. Then survive as long as you can.</p></div>
+</li>
+</ol>
+</div>
+</section>
+
+<section id="features" style="background: #10131C; border-top: 1px solid #22263A; border-bottom: 1px solid #22263A">
+<div class="col" style="display: flex; flex-direction: column; gap: 8px; padding-top: 44px">
+<p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: #FFC62E">Features · swipe</p>
+<h2 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 36px; line-height: 1.05; text-transform: uppercase">Dodge. Collect. Survive.</h2>
+</div>
+<div class="rail" style="max-width: 520px; margin: 0 auto; display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 18px max(18px, env(safe-area-inset-left, 0px)) 8px; box-sizing: border-box">
+<div style="flex: 0 0 72%; scroll-snap-align: start; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; background: #161924; border: 1px solid #2A2F40">
+<img src="img/phone_19.jpg" alt="Real gameplay: the rider passes a bus and a car on City Highway" style="width: 100%; aspect-ratio: 9 / 13; object-fit: cover; object-position: 50% 40%; max-width: 100%">
+<div style="padding: 14px 16px 18px"><h3 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 21px; text-transform: uppercase; color: #FF8A47">Traffic</h3><p style="margin: 4px 0 0; font-size: 15px; color: #B9BFCC">Swipe across 4 lanes. The left two are oncoming: a head-on hit ends the run.</p></div>
+</div>
+<div style="flex: 0 0 72%; scroll-snap-align: start; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; background: #161924; border: 1px solid #2A2F40">
+<img src="img/phone_22.jpg" alt="Real gameplay: peso bills and a cone on the road ahead of the rider" style="width: 100%; aspect-ratio: 9 / 13; object-fit: cover; object-position: 50% 40%; max-width: 100%">
+<div style="padding: 14px 16px 18px"><h3 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 21px; text-transform: uppercase; color: #FFC62E">Cash &amp; fuel</h3><p style="margin: 4px 0 0; font-size: 15px; color: #B9BFCC">Grab ₱20, ₱50 and ₱100 bills. The tank drains as you ride: jerry cans refill 28%.</p></div>
+</div>
+<div style="flex: 0 0 72%; scroll-snap-align: start; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; background: #161924; border: 1px solid #2A2F40">
+<img src="img/phone_41.jpg" alt="Real gameplay: the LTO CHASE timer at 9.9 seconds on the Coastal Highway" style="width: 100%; aspect-ratio: 9 / 13; object-fit: cover; object-position: 50% 30%; max-width: 100%">
+<div style="padding: 14px 16px 18px"><h3 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 21px; text-transform: uppercase; color: #6FA6FF">LTO chase</h3><p style="margin: 4px 0 0; font-size: 15px; color: #B9BFCC">Scrape a car or guardrail and the officer comes back. Lagot ka, boss!</p></div>
+</div>
+<div style="flex: 0 0 72%; scroll-snap-align: start; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; background: #161924; border: 1px solid #2E2A4A">
+<img src="img/phone_81.jpg" alt="Real gameplay: the dark underground tunnel with a train passing and the UNDERGROUND exit timer" style="width: 100%; aspect-ratio: 9 / 13; object-fit: cover; object-position: 50% 40%; max-width: 100%">
+<div style="padding: 14px 16px 18px"><h3 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 21px; text-transform: uppercase; color: #A99BFF">Manhole tunnel</h3><p style="margin: 4px 0 0; font-size: 15px; color: #B9BFCC">One hidden manhole per world. Fall in for 20 dark seconds of trains and pedestrians.</p></div>
+</div>
+</div>
+<div class="col" style="display: flex; flex-direction: column; gap: 10px; padding-top: 22px; padding-bottom: 44px">
+<p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: #9EA5B4">Three ways a run ends</p>
+<p style="margin: 0; padding: 12px 16px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40"><b style="font-family: 'Oswald', Impact, sans-serif; letter-spacing: 1px; color: #6FA6FF">TICKET &amp; JAIL</b> <span style="color: #B9BFCC">· second side crash in a chase</span></p>
+<p style="margin: 0; padding: 12px 16px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40"><b style="font-family: 'Oswald', Impact, sans-serif; letter-spacing: 1px; color: #FF8A47">AMBULANCE</b> <span style="color: #B9BFCC">· head-on with oncoming traffic</span></p>
+<p style="margin: 0; padding: 12px 16px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40"><b style="font-family: 'Oswald', Impact, sans-serif; letter-spacing: 1px; color: #FFC62E">OUT OF FUEL</b> <span style="color: #B9BFCC">· the tank hits zero</span></p>
+</div>
+</section>
+
+<section id="worlds" style="background: #0B0C12">
+<div class="col" style="display: flex; flex-direction: column; gap: 16px; padding-top: 44px; padding-bottom: 24px">
+<p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: #FFC62E">Every 1 km, a new world</p>
+<h2 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 36px; line-height: 1.05; text-transform: uppercase; text-wrap: balance">Five roads, then it loops harder</h2>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<li style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 0 16px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40; border-left: 5px solid #9AA3B5"><b style="font-family: 'Oswald', Impact, sans-serif; font-size: 18px; letter-spacing: 1px">CITY HIGHWAY</b><span style="font-size: 14px; color: #9EA5B4">0–1 km</span></li>
+<li style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 0 16px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40; border-left: 5px solid #6BBF59"><b style="font-family: 'Oswald', Impact, sans-serif; font-size: 18px; letter-spacing: 1px">PROVINCIAL ROAD</b><span style="font-size: 14px; color: #9EA5B4">1–2 km</span></li>
+<li style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 0 16px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40; border-left: 5px solid #A0724B"><b style="font-family: 'Oswald', Impact, sans-serif; font-size: 18px; letter-spacing: 1px">MOUNTAIN ROAD</b><span style="font-size: 14px; color: #9EA5B4">2–3 km</span></li>
+<li style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 0 16px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40; border-left: 5px solid #FF8A47"><b style="font-family: 'Oswald', Impact, sans-serif; font-size: 18px; letter-spacing: 1px">COASTAL HIGHWAY</b><span style="font-size: 14px; color: #9EA5B4">3–4 km · sunset</span></li>
+<li style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 0 16px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40; border-left: 5px solid #3D86FF"><b style="font-family: 'Oswald', Impact, sans-serif; font-size: 18px; letter-spacing: 1px">URBAN ROAD</b><span style="font-size: 14px; color: #9EA5B4">4–5 km · rain</span></li>
+</ol>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px" aria-label="In-game reaction pop-ups">
+<span style="font-family: 'Oswald', Impact, sans-serif; font-size: 15px; letter-spacing: 1px; color: #14110A; background: #FFC62E; padding: 5px 12px; border-radius: 8px; transform: rotate(-2deg)">AY, NAKO!</span>
+<span style="font-family: 'Oswald', Impact, sans-serif; font-size: 15px; letter-spacing: 1px; color: #EEF0F5; background: #E2560F; padding: 5px 12px; border-radius: 8px; transform: rotate(1.5deg)">KAMOTE MOMENT!</span>
+<span style="font-family: 'Oswald', Impact, sans-serif; font-size: 15px; letter-spacing: 1px; color: #EEF0F5; background: #2F6FE0; padding: 5px 12px; border-radius: 8px; transform: rotate(-1deg)">TAKBO, KAMOTE!</span>
+<span style="font-family: 'Oswald', Impact, sans-serif; font-size: 15px; letter-spacing: 1px; color: #14110A; background: #FFC62E; padding: 5px 12px; border-radius: 8px; transform: rotate(2deg)">SANA ALL MAY GASOLINA!</span>
+</div>
+</div>
+</section>
+
+<section id="difficulty" style="background: #0B0C12">
+<div class="col" style="display: flex; flex-direction: column; gap: 14px; padding-top: 28px; padding-bottom: 48px">
+<p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: #FFC62E">Choose difficulty · tap one</p>
+<h2 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 36px; line-height: 1.05; text-transform: uppercase; text-wrap: balance">Pick your kind of kamote</h2>
+<div role="group" aria-label="Difficulty" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 6px; border-radius: 14px; background: #121521; border: 1px solid #22263A">
+<button type="button" class="diff" data-level="easy" aria-pressed="false" style="min-height: 48px; cursor: pointer; border-radius: 10px; border: none; background: transparent; color: #D2D6DF; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 17px; letter-spacing: 2px">EASY</button>
+<button type="button" class="diff" data-level="medium" aria-pressed="true" style="min-height: 48px; cursor: pointer; border-radius: 10px; border: none; background: #FFC62E; color: #14110A; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 17px; letter-spacing: 2px">MEDIUM</button>
+<button type="button" class="diff" data-level="hard" aria-pressed="false" style="min-height: 48px; cursor: pointer; border-radius: 10px; border: none; background: transparent; color: #D2D6DF; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 17px; letter-spacing: 2px">HARD</button>
+</div>
+<p style="margin: 0; font-size: 17px; font-style: italic; color: #FFC62E; text-align: center">“<span id="d-quote">Sakto lang, pero ingat.</span>”</p>
+<dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<div style="padding: 12px 14px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40"><dt style="font-size: 13px; color: #9EA5B4">Starting speed</dt><dd style="margin: 2px 0 0; font-family: 'Oswald', Impact, sans-serif; font-size: 24px; font-variant-numeric: tabular-nums"><span id="d-speed">×1.0</span></dd></div>
+<div style="padding: 12px 14px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40"><dt style="font-size: 13px; color: #9EA5B4">Fuel burn</dt><dd style="margin: 2px 0 0; font-family: 'Oswald', Impact, sans-serif; font-size: 24px; font-variant-numeric: tabular-nums"><span id="d-fuel">×1.0</span></dd></div>
+<div style="padding: 12px 14px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40"><dt style="font-size: 13px; color: #9EA5B4">Oncoming warning</dt><dd style="margin: 2px 0 0; font-family: 'Oswald', Impact, sans-serif; font-size: 24px; font-variant-numeric: tabular-nums"><span id="d-warn">1.3 s</span></dd></div>
+<div style="padding: 12px 14px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40"><dt style="font-size: 13px; color: #9EA5B4">Bonus money</dt><dd style="margin: 2px 0 0; font-family: 'Oswald', Impact, sans-serif; font-size: 24px; font-variant-numeric: tabular-nums; color: #FFC62E"><span id="d-bonus">×1.0</span></dd></div>
+</dl>
+</div>
+</section>
+
+<section id="garage" style="background: #10131C; border-top: 1px solid #22263A; border-bottom: 1px solid #22263A">
+<div class="col" style="display: flex; flex-direction: column; gap: 14px; padding-top: 44px; padding-bottom: 44px">
+<p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: #FFC62E">Impound garage</p>
+<h2 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 36px; line-height: 1.05; text-transform: uppercase; text-wrap: balance">Free 15 impounded bikes</h2>
+<p style="margin: 0; font-size: 15px; color: #B9BFCC">Spend your run earnings on impound fees. Each bike trades speed, handling and fuel efficiency.</p>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-variant-numeric: tabular-nums">
+<li style="display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40"><span style="flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 9px; background: #2A2410; color: #FFC62E; font-family: 'Oswald', Impact, sans-serif; font-weight: 700">T1</span><span style="flex: 1; min-width: 0; font-size: 15px">Kamote 110 → Sidecar Sprint</span><span style="flex: none; font-size: 14px; color: #FFC62E">Free–₱2K</span></li>
+<li style="display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40"><span style="flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 9px; background: #2A2410; color: #FFC62E; font-family: 'Oswald', Impact, sans-serif; font-weight: 700">T2</span><span style="flex: 1; min-width: 0; font-size: 15px">Tricycle Escape → Provincial Flash</span><span style="flex: none; font-size: 14px; color: #FFC62E">₱3.5K–₱7K</span></li>
+<li style="display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40"><span style="flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 9px; background: #2A2410; color: #FFC62E; font-family: 'Oswald', Impact, sans-serif; font-weight: 700">T3</span><span style="flex: 1; min-width: 0; font-size: 15px">Road Rebel 150 → Midnight Racer</span><span style="flex: none; font-size: 14px; color: #FFC62E">₱10K–₱18K</span></li>
+<li style="display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40"><span style="flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 9px; background: #2A2410; color: #FFC62E; font-family: 'Oswald', Impact, sans-serif; font-weight: 700">T4</span><span style="flex: 1; min-width: 0; font-size: 15px">Thunder 250 → Mountain Stalker</span><span style="flex: none; font-size: 14px; color: #FFC62E">₱24K–₱42K</span></li>
+<li style="display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 12px; background: #161924; border: 1px solid #2A2F40"><span style="flex: none; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 9px; background: #2A2410; color: #FFC62E; font-family: 'Oswald', Impact, sans-serif; font-weight: 700">T5</span><span style="flex: 1; min-width: 0; font-size: 15px">Highway King 400 → Kamote Xtreme</span><span style="flex: none; font-size: 14px; color: #FFC62E">₱55K–₱100K</span></li>
+</ol>
+</div>
+</section>
+
+<section id="barkada" style="background: #0B0C12">
+<div class="col" style="display: flex; flex-direction: column; gap: 14px; padding-top: 44px; padding-bottom: 44px">
+<p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: #A99BFF">Barkada Race · pass &amp; play</p>
+<h2 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 36px; line-height: 1.05; text-transform: uppercase; text-wrap: balance">One phone. Your whole barkada.</h2>
+<p style="margin: 0; font-size: 15px; color: #B9BFCC">2–4 friends take turns on the same highway, one run each, no restarts. The podium ranks everyone, and each run lands on the leaderboard.</p>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-top: 4px">
+<img src="img/results.jpg" alt="In-game screenshot: Barkada Race results podium" style="width: 100%; border-radius: 16px; border: 1px solid #2A2F40; max-width: 100%">
+<img src="img/leaderboard.jpg" alt="In-game screenshot: the on-device leaderboard" style="width: 100%; border-radius: 16px; border: 1px solid #2A2F40; max-width: 100%">
+</div>
+<p style="margin: 0; font-size: 14px; color: #9EA5B4">Score = meters ridden + pesos earned. Works offline, no account needed.</p>
+</div>
+</section>
+
+<section aria-label="Built with" style="background: #10131C; border-top: 1px solid #22263A">
+<div class="col" style="display: flex; flex-direction: column; gap: 8px; padding-top: 28px; padding-bottom: 28px">
+<p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-size: 13px; letter-spacing: 4px; text-transform: uppercase; color: #9EA5B4">Built with</p>
+<p style="margin: 0; font-size: 15px; color: #D2D6DF"><b>Flutter</b> + the <b>Flame</b> engine, written in <b>Dart</b>. Made for Android phones in portrait. Progress saves on the device.</p>
+</div>
+</section>
+
+<section id="get" style="position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 100%, #3A1C0C 0%, #0B0C12 70%)">
+<div class="col" style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding-top: 64px; padding-bottom: 56px">
+<h2 style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 44px; line-height: 1; text-transform: uppercase; text-wrap: balance; text-shadow: 0 4px 0 #FF6B1A">The highway never ends.</h2>
+<p style="margin: 0; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 28px; text-transform: uppercase; letter-spacing: 3px; color: #FF8A47">Can you survive?</p>
+<div style="width: 100%; display: flex; flex-direction: column; gap: 10px; padding-top: 10px">
+<a class="tap" href="kamote-rider-v1.0.0.apk" style="display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 56px; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 19px; letter-spacing: 2px; color: #14110A; background: linear-gradient(90deg, #FFC62E 0%, #FF8A2A 100%); border-radius: 14px; text-decoration: none">Download APK · v1.0.0</a>
+<p style="margin: 0; font-size: 14px; color: #9EA5B4">54.6 MB · Android 64-bit and 32-bit ARM · <a href="https://github.com/Piolo284/Kamote-Rider-High-way-Escape/tree/apk-release/releases">Install steps</a></p>
+</div>
+</div>
+</section>
+
+<footer style="background: #07080D; border-top: 1px solid #22263A">
+<div class="col" style="display: flex; flex-direction: column; gap: 8px; padding-top: 22px; padding-bottom: 96px; font-size: 13px; color: #9EA5B4">
+<p style="margin: 0">© [YEAR] [TEAM / DEVELOPER NAME] · eGames competition entry</p>
+<p style="margin: 0">A fictional, humorous game. All characters, officers, vehicles and brands are made up. Ride safe in real life.</p>
+</div>
+</footer>
+
+<div style="position: sticky; bottom: 0; z-index: 20; background: rgba(11,12,18,0.95); border-top: 1px solid #22263A; backdrop-filter: blur(8px); padding-bottom: env(safe-area-inset-bottom, 0px)">
+<div class="col" style="display: flex; gap: 10px; align-items: center; padding-top: 10px; padding-bottom: 10px">
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="font-family: 'Oswald', Impact, sans-serif; font-size: 16px; letter-spacing: 1px">KAMOTE RIDER</span>
+<span style="font-size: 12px; color: #9EA5B4">v1.0.0 · 54.6 MB APK</span>
+</div>
+<a class="tap" href="kamote-rider-v1.0.0.apk" style="flex: none; display: flex; align-items: center; min-height: 48px; padding: 0 22px; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 17px; letter-spacing: 2px; color: #14110A; background: linear-gradient(90deg, #FFC62E 0%, #FF8A2A 100%); border-radius: 12px; text-decoration: none">DOWNLOAD</a>
+</div>
+</div>
+
+</div>
+<script>
+(function () {
+  var levels = {
+    easy: { quote: 'Chill ride, idol.', speed: '×0.86', fuel: '×0.8', warn: '1.6 s', bonus: '×0.75' },
+    medium: { quote: 'Sakto lang, pero ingat.', speed: '×1.0', fuel: '×1.0', warn: '1.3 s', bonus: '×1.0' },
+    hard: { quote: 'Para sa tunay na kamote survivor.', speed: '×1.1', fuel: '×1.2', warn: '1.1 s', bonus: '×1.5' }
+  };
+  var ON = "min-height: 48px; cursor: pointer; border-radius: 10px; border: none; background: #FFC62E; color: #14110A; font-family: 'Oswald', Impact, sans-serif; font-weight: 700; font-size: 17px; letter-spacing: 2px", OFF = "min-height: 48px; cursor: pointer; border-radius: 10px; border: none; background: transparent; color: #D2D6DF; font-family: 'Oswald', Impact, sans-serif; font-weight: 600; font-size: 17px; letter-spacing: 2px";
+  var buttons = document.querySelectorAll('.diff');
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var l = levels[b.dataset.level];
+      buttons.forEach(function (o) { var me = o === b; o.setAttribute('aria-pressed', me); o.style.cssText = me ? ON : OFF; });
+      Object.keys(l).forEach(function (k) { document.getElementById('d-' + k).textContent = l[k]; });
+    });
+  });
+})();
+</script>
+</body>
+</html>
