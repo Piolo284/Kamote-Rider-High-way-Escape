@@ -2,7 +2,7 @@
 
 **Download:** [kamote-rider-v1.0.0.apk](kamote-rider-v1.0.0.apk) (version 1.0.0, 54.6 MB)
 
-SHA-256: `acbe169f944cc80a5e626988f4dd444c71c697d28bf558840b2da71900bd51fd`
+SHA-256: `f357bb6dc20f2c64dc0d245a12f2d54f9bd2465a8d6e51e15f8299c4c3f4f96c`
 
 ## Install on an Android phone
 
