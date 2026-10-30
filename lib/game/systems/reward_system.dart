@@ -14,6 +14,8 @@ class RewardSystem {
   int _challengeCash = 0;
   int _challenges = 0;
   int _fuel = 0;
+  int _spent = 0;
+  int _penalties = 0;
   bool _finalized = false;
   double bonusMultiplier = 1;
 
@@ -30,8 +32,37 @@ class RewardSystem {
   int get challengeCash => _challengeCash;
   int get challengesCompleted => _challenges;
   int get fuelCollected => _fuel;
-  int get runEarnings => _billCash + _milestoneCash + _chaseBonus + _skillBonus + _challengeCash;
+
+  /// Everything collected this run, before spending and penalties.
+  int get grossEarnings => _billCash + _milestoneCash + _chaseBonus + _skillBonus + _challengeCash;
+
+  /// Money spent in the in-run shop.
+  int get spentCash => _spent;
+
+  /// Money taken by traffic-violation penalties.
+  int get penaltyCash => _penalties;
+
+  /// Money the rider has right now: what they can spend, and what is banked
+  /// when the run ends. Never negative.
+  int get runEarnings => grossEarnings - _spent - _penalties;
   bool get isFinalized => _finalized;
+
+  /// Pays [amount] from the run's money. Returns false (and charges
+  /// nothing) when there is not enough.
+  bool spend(int amount) {
+    if (_finalized || amount <= 0 || amount > runEarnings) return false;
+    _spent += amount;
+    return true;
+  }
+
+  /// Takes a penalty of up to [amount], never more than the rider has.
+  /// Returns what was actually deducted.
+  int penalize(int amount) {
+    if (_finalized || amount <= 0) return 0;
+    final taken = amount.clamp(0, runEarnings);
+    _penalties += taken;
+    return taken;
+  }
 
   static int milestoneRewardFor(int kilometer) => 50 + 50 * kilometer;
 
@@ -92,6 +123,8 @@ class RewardSystem {
     List<String> missionsCompleted = const [],
     int bestCombo = 0,
     String difficultyLabel = 'MEDIUM',
+    int violations = 0,
+    int maxPursuitLevel = 0,
   }) {
     if (_finalized) return null;
     _finalized = true;
@@ -108,6 +141,10 @@ class RewardSystem {
       challengesCompleted: _challenges,
       bestCombo: bestCombo,
       difficultyLabel: difficultyLabel,
+      spentCash: _spent,
+      penaltyCash: _penalties,
+      violations: violations,
+      maxPursuitLevel: maxPursuitLevel,
     );
   }
 
@@ -120,6 +157,8 @@ class RewardSystem {
     _challengeCash = 0;
     _challenges = 0;
     _fuel = 0;
+    _spent = 0;
+    _penalties = 0;
     _finalized = false;
     this.bonusMultiplier = bonusMultiplier;
   }

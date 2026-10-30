@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../models/motorcycle_model.dart';
+import '../models/upgrade_model.dart';
 import '../services/app_services.dart';
 import '../services/audio_service.dart';
 import '../services/garage_service.dart';
@@ -92,6 +93,17 @@ class _GarageScreenState extends State<GarageScreen> {
     }
   }
 
+  void _openUpgrades(Motorcycle bike) {
+    AppServices.of(context).audio.play(Sfx.click);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: KColors.background,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _UpgradeSheet(bike: bike),
+    );
+  }
+
   void _snack(String text) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -134,6 +146,8 @@ class _GarageScreenState extends State<GarageScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                       child: _BikeCard(
                         bike: bike,
+                        stats: services.garage.statsOf(bike),
+                        upgradesBought: services.garage.upgradesOf(bike.id).purchased,
                         unlocked: services.garage.isUnlocked(bike.id),
                         selected: services.garage.isSelected(bike.id),
                         canBuy: services.garage.canBuy(bike.id),
@@ -143,6 +157,7 @@ class _GarageScreenState extends State<GarageScreen> {
                           services.garage.select(bike.id);
                           services.audio.play(Sfx.click);
                         },
+                        onUpgrade: () => _openUpgrades(bike),
                       ),
                     );
                   },
@@ -186,21 +201,27 @@ class _GarageScreenState extends State<GarageScreen> {
 class _BikeCard extends StatelessWidget {
   const _BikeCard({
     required this.bike,
+    required this.stats,
+    required this.upgradesBought,
     required this.unlocked,
     required this.selected,
     required this.canBuy,
     required this.wallet,
     required this.onBuy,
     required this.onSelect,
+    required this.onUpgrade,
   });
 
   final Motorcycle bike;
+  final BikeStats stats;
+  final int upgradesBought;
   final bool unlocked;
   final bool selected;
   final bool canBuy;
   final int wallet;
   final VoidCallback onBuy;
   final VoidCallback onSelect;
+  final VoidCallback onUpgrade;
 
   @override
   Widget build(BuildContext context) {
@@ -213,26 +234,43 @@ class _BikeCard extends StatelessWidget {
         height: 50,
         fontSize: 16,
       );
-    } else if (selected) {
-      action = const ArcadeButton(
-        label: 'SELECTED',
-        icon: Icons.check_circle_rounded,
-        color: KColors.green,
-        textColor: Colors.white,
-        onPressed: null,
-        dimWhenDisabled: false,
-        height: 50,
-        fontSize: 16,
-      );
     } else {
-      action = ArcadeButton(
-        label: 'SELECT',
-        icon: Icons.two_wheeler_rounded,
-        color: KColors.blue,
-        textColor: Colors.white,
-        onPressed: onSelect,
-        height: 50,
-        fontSize: 16,
+      final choose = selected
+          ? const ArcadeButton(
+              label: 'SELECTED',
+              icon: Icons.check_circle_rounded,
+              color: KColors.green,
+              textColor: Colors.white,
+              onPressed: null,
+              dimWhenDisabled: false,
+              height: 50,
+              fontSize: 14,
+            )
+          : ArcadeButton(
+              label: 'SELECT',
+              icon: Icons.two_wheeler_rounded,
+              color: KColors.blue,
+              textColor: Colors.white,
+              onPressed: onSelect,
+              height: 50,
+              fontSize: 14,
+            );
+      action = Row(
+        children: [
+          Expanded(child: choose),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ArcadeButton(
+              label: 'UPGRADE',
+              icon: Icons.build_rounded,
+              color: const Color(0xFFF57C00),
+              textColor: Colors.white,
+              onPressed: onUpgrade,
+              height: 50,
+              fontSize: 14,
+            ),
+          ),
+        ],
       );
     }
 
@@ -248,6 +286,15 @@ class _BikeCard extends StatelessWidget {
                 child: _Chip(text: bike.rarity.label.toUpperCase(), color: bike.rarity.color),
               ),
               const Spacer(),
+              if (upgradesBought > 0) ...[
+                Flexible(
+                  child: _Chip(
+                    text: 'UPG $upgradesBought/${UpgradeStat.values.length * (UpgradeLevels.maxLevel - 1)}',
+                    color: const Color(0xFFF57C00),
+                  ),
+                ),
+                const SizedBox(width: 6),
+              ],
               Flexible(
                 child: _Chip(
                   text: unlocked ? 'OWNED' : (bike.isFree ? 'FREE' : 'IMPOUNDED'),
@@ -302,7 +349,7 @@ class _BikeCard extends StatelessWidget {
             value: bike.speed,
             max: 15,
             color: KColors.red,
-            trailing: '${bike.topSpeedKmh.round()} km/h',
+            trailing: '${stats.topSpeedKmh.round()} km/h',
           ),
           StatBar(label: 'Handling', value: bike.handling, max: 10, color: KColors.blue),
           StatBar(label: 'Fuel eff.', value: bike.fuelEfficiency, max: 10, color: KColors.yellow),
@@ -340,6 +387,203 @@ class _Chip extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1),
+      ),
+    );
+  }
+}
+
+/// Per-bike upgrades: five categories, Level 1 to 5, each bought separately.
+class _UpgradeSheet extends StatelessWidget {
+  const _UpgradeSheet({required this.bike});
+
+  final Motorcycle bike;
+
+  @override
+  Widget build(BuildContext context) {
+    final services = AppServices.of(context);
+    final garage = services.garage;
+    return ListenableBuilder(
+      listenable: services.profile,
+      builder: (context, _) {
+        final levels = garage.upgradesOf(bike.id);
+        final now = garage.statsOf(bike);
+        final wallet = services.profile.data.wallet;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.88),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'UPGRADE',
+                              style: TextStyle(color: Color(0xFFF57C00), fontWeight: FontWeight.w900, letterSpacing: 2),
+                            ),
+                            Text(
+                              bike.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                            ),
+                          ],
+                        ),
+                      ),
+                      WalletChip(amount: wallet),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Upgrades are permanent and belong to this motorcycle only.',
+                    style: TextStyle(color: KColors.muted, fontSize: 12),
+                  ),
+                  const SizedBox(height: 8),
+                  Flexible(
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        for (final stat in UpgradeStat.values)
+                          _UpgradeRow(
+                            stat: stat,
+                            level: levels[stat],
+                            now: now.display(stat),
+                            next: levels.isMaxed(stat) ? null : _nextStats(levels, stat).display(stat),
+                            cost: garage.upgradeCost(bike.id, stat),
+                            wallet: wallet,
+                            onUpgrade: () {
+                              final result = garage.upgrade(bike.id, stat);
+                              if (result == UpgradeResult.success) {
+                                services.audio.play(Sfx.unlock);
+                                services.audio.haptic();
+                              }
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ArcadeButton(
+                    label: 'BACK',
+                    icon: Icons.arrow_back_rounded,
+                    color: const Color(0xFF546E7A),
+                    textColor: Colors.white,
+                    height: 48,
+                    fontSize: 15,
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Stats as they would be after buying one more level of [stat].
+  BikeStats _nextStats(UpgradeLevels levels, UpgradeStat stat) {
+    final copy = UpgradeLevels({for (final s in UpgradeStat.values) s: levels[s]})..raise(stat);
+    return BikeStats.of(bike, copy);
+  }
+}
+
+class _UpgradeRow extends StatelessWidget {
+  const _UpgradeRow({
+    required this.stat,
+    required this.level,
+    required this.now,
+    required this.next,
+    required this.cost,
+    required this.wallet,
+    required this.onUpgrade,
+  });
+
+  final UpgradeStat stat;
+  final int level;
+  final String now;
+
+  /// Value after the next level, or null when maxed.
+  final String? next;
+  final int? cost;
+  final int wallet;
+  final VoidCallback onUpgrade;
+
+  @override
+  Widget build(BuildContext context) {
+    final price = cost;
+    final affordable = price != null && wallet >= price;
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+      decoration: BoxDecoration(color: KColors.panel, borderRadius: BorderRadius.circular(14)),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        stat.label,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'LV $level',
+                      style: const TextStyle(color: KColors.yellow, fontWeight: FontWeight.w900),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    for (var i = 1; i <= UpgradeLevels.maxLevel; i++)
+                      Container(
+                        width: 18,
+                        height: 6,
+                        margin: const EdgeInsets.only(right: 3),
+                        decoration: BoxDecoration(
+                          color: i <= level ? const Color(0xFFF57C00) : Colors.white12,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  next == null ? 'Now $now · MAX LEVEL' : 'Now $now · Next $next',
+                  style: const TextStyle(color: KColors.text, fontSize: 12, fontWeight: FontWeight.w700),
+                ),
+                Text(stat.description, style: const TextStyle(color: KColors.muted, fontSize: 11)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton(
+            onPressed: affordable ? onUpgrade : null,
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFF57C00),
+              foregroundColor: Colors.white,
+              minimumSize: const Size(92, 44),
+            ),
+            child: Text(
+              price == null ? 'MAX' : (affordable ? formatPeso(price) : 'NEED ${formatPeso(price - wallet)}'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
+            ),
+          ),
+        ],
       ),
     );
   }

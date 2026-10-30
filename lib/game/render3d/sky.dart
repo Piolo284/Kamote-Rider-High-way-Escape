@@ -31,9 +31,10 @@ class SkyPainter {
     c.drawRect(Rect.fromLTWH(0, 0, w, hz + 2), _p);
     _p.shader = null;
 
-    // Distant scenery drifts a little as the rider steers.
+    // Distant scenery drifts a little as the rider steers, and swings with
+    // the far end of the road on a bend.
     final unit = math.min(w, cam.height) / 400;
-    final shift = -(cam.camX - 200) * 0.12 * unit;
+    final shift = -(cam.camX - 200) * 0.12 * unit + cam.horizonBendPx * 0.35;
     c.save();
     c.translate(shift, 0);
     switch (i) {

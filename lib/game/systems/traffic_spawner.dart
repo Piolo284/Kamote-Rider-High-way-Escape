@@ -120,7 +120,7 @@ class TrafficSpawner extends Component with HasGameReference<KamoteGame> {
   /// Disabled in tests that place entities by hand.
   bool enabled = true;
 
-  static const int maxVehicles = 12;
+  static const int maxVehicles = 16;
   static const int maxObstacles = 10;
   static const int maxCash = 40;
 
@@ -216,16 +216,27 @@ class TrafficSpawner extends Component with HasGameReference<KamoteGame> {
 
   // ------------------------------------------------------------ spawning
 
+  /// Chance, relative to the row's vehicle chance, of one more oncoming
+  /// vehicle in the two left lanes on top of the row's usual traffic.
+  static const double extraOncomingShare = 0.5;
+
   void _spawnRow(Difficulty d) {
     final env = Environments.visual(game.visualEnvironmentIndex);
     if (_rnd.nextDouble() < d.vehicleChance) _trySpawnVehicle(d, env);
+    // Busier left lanes on the highway. The tunnel keeps its own pace, and
+    // the extra traffic gives way while a challenge needs room.
+    if (!game.underground.showsTunnel &&
+        !game.challenges.challengeSoon &&
+        _rnd.nextDouble() < d.vehicleChance * extraOncomingShare) {
+      _trySpawnVehicle(d, env, oncoming: true);
+    }
     if (_rnd.nextDouble() < d.obstacleChance) _trySpawnObstacle(env);
   }
 
-  void _trySpawnVehicle(Difficulty d, EnvironmentTheme env) {
+  void _trySpawnVehicle(Difficulty d, EnvironmentTheme env, {bool? oncoming}) {
     final vehicles = game.world.children.whereType<TrafficVehicle>().toList();
     if (vehicles.length >= maxVehicles) return;
-    final oncoming = _rnd.nextDouble() < d.oncomingShare;
+    oncoming ??= _rnd.nextDouble() < d.oncomingShare;
     final type = _weighted(env.vehicleWeights);
     final size = VehiclePainter.sizeOf(type);
     final lanes = oncoming ? [0, 1] : [2, 3];

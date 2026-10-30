@@ -5,6 +5,7 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 
 import '../../models/motorcycle_model.dart';
+import '../../models/upgrade_model.dart';
 import '../game_config.dart';
 import '../kamote_game.dart';
 import '../painting/bike_painter.dart';
@@ -17,6 +18,9 @@ class PlayerMotorcycle extends PositionComponent with HasGameReference<KamoteGam
   static final Vector2 hitSize = Vector2(15, 44);
 
   Motorcycle bike = MotorcycleCatalog.all.first;
+
+  /// The bike's numbers including garage upgrades.
+  BikeStats stats = BikeStats.of(MotorcycleCatalog.all.first);
   int lane = 2;
   double previousX = 0;
 
@@ -53,15 +57,16 @@ class PlayerMotorcycle extends PositionComponent with HasGameReference<KamoteGam
   Rect get hitRect => Rect.fromCenter(center: Offset(x, y), width: hitSize.x, height: hitSize.y);
   Rect get previousHitRect => Rect.fromCenter(center: Offset(previousX, y), width: hitSize.x, height: hitSize.y);
 
-  double get _maxLateralSpeed => GameConfig.laneWidth / bike.laneChangeSeconds * steeringMultiplier;
+  double get _maxLateralSpeed => GameConfig.laneWidth / stats.laneChangeSeconds * steeringMultiplier;
 
   @override
   Future<void> onLoad() async {
     add(RectangleHitbox(size: hitSize, position: (size - hitSize) / 2));
   }
 
-  void reset(Motorcycle newBike, {required double y, int startLane = 2}) {
+  void reset(Motorcycle newBike, {required double y, int startLane = 2, BikeStats? stats}) {
     bike = newBike;
+    this.stats = stats ?? BikeStats.of(newBike);
     _override = game.sprites.get('bike_${bike.id}');
     lane = startLane;
     x = GameConfig.laneCenter(lane);

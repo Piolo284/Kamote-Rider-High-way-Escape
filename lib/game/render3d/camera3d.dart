@@ -35,6 +35,13 @@ class Camera3D {
   /// World y of the rider.
   double playerY = 600;
 
+  /// Road bend: sideways shift (world units) per squared unit of distance
+  /// ahead. Zero at and behind the rider, so gameplay never moves.
+  double curve = 0;
+
+  /// Bend used for the sharpest curve (curvature 1).
+  static const double maxCurve = 1.1e-4;
+
   /// How much [pullBehind] shortens distances behind the rider.
   static const double behindCompression = 0.4;
 
@@ -89,9 +96,22 @@ class Camera3D {
     return z < farZ && z + camBack > nearDepth;
   }
 
+  /// How far the bent road has drifted sideways at world row [y].
+  double bendX(double y) {
+    if (curve == 0) return 0;
+    final z = zOf(y);
+    return z <= 0 ? 0 : curve * z * z;
+  }
+
+  /// Screen pixels the bend moves things at row [y].
+  double bendPx(double y) => bendX(y) * focal / depthOf(y);
+
+  /// Sideways pixel shift of the horizon, for parallax on the sky.
+  double get horizonBendPx => bendPx(playerY - farZ);
+
   Offset project(double x, double y, [double h = 0]) {
     final s = focal / depthOf(y);
-    return Offset(cx + (x - camX) * s, horizonY + (camHeight - h) * s);
+    return Offset(cx + (x + bendX(y) - camX) * s, horizonY + (camHeight - h) * s);
   }
 
   /// World y of the nearest row that is drawn.

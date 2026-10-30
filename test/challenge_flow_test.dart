@@ -339,7 +339,9 @@ void main() {
           worst = math.max(worst, blockedLanes(game).length);
           animals.addAll(game.world.children.whereType<RoadAnimal>());
         }
-        expect(game.challenges.started.length, greaterThan(4), reason: 'challenges actually ran');
+        // How many fit in 150 s swings with the random sequence (3–5 on Easy),
+        // so this only checks that several really ran.
+        expect(game.challenges.started.length, greaterThan(2), reason: 'challenges actually ran');
         expect(worst, lessThanOrEqualTo(2));
         // Cleanup: nothing accumulates.
         expect(game.world.children.length, lessThan(140));

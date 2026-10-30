@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/leaderboard_model.dart';
 import '../models/motorcycle_model.dart';
 import '../models/player_save_model.dart';
+import '../models/upgrade_model.dart';
 import 'save_service.dart';
 
 /// Result of a finished run as applied to permanent progression.
@@ -20,6 +21,10 @@ class RunResult {
     this.challengesCompleted = 0,
     this.bestCombo = 0,
     this.difficultyLabel = 'MEDIUM',
+    this.spentCash = 0,
+    this.penaltyCash = 0,
+    this.violations = 0,
+    this.maxPursuitLevel = 0,
   });
 
   final double distanceMeters;
@@ -39,9 +44,25 @@ class RunResult {
   final int bestCombo;
   final String difficultyLabel;
 
-  int get totalEarnings => billCash + milestoneCash + chaseBonusCash + skillBonusCash + challengeCash;
+  /// Spent in the in-run shop on gasoline and boosters.
+  final int spentCash;
 
-  int get score => LeaderboardEntry.scoreFor(distanceMeters: distanceMeters, earnings: totalEarnings);
+  /// Deducted by traffic-violation penalties.
+  final int penaltyCash;
+  final int violations;
+
+  /// Most LTO officers pursuing at once during the run.
+  final int maxPursuitLevel;
+
+  /// Everything collected during the run, before spending and penalties.
+  int get grossEarnings => billCash + milestoneCash + chaseBonusCash + skillBonusCash + challengeCash;
+
+  /// What is banked into the wallet.
+  int get totalEarnings => grossEarnings - spentCash - penaltyCash;
+
+  /// Shop spending does not lower the score (it is an investment in going
+  /// farther); violation penalties do.
+  int get score => LeaderboardEntry.scoreFor(distanceMeters: distanceMeters, earnings: grossEarnings - penaltyCash);
 }
 
 /// Summary returned to the game-over screens after the result is banked.
@@ -76,6 +97,9 @@ class PlayerProfile extends ChangeNotifier {
   PlayerSaveModel get data => _data;
   GameSettings get settings => _data.settings;
   Motorcycle get selectedBike => MotorcycleCatalog.byId(_data.selectedBike);
+
+  /// The selected bike's numbers including its garage upgrades.
+  BikeStats get selectedStats => BikeStats.of(selectedBike, _data.upgradesOf(selectedBike.id));
 
   /// Notifies listeners and persists asynchronously.
   void commit() {

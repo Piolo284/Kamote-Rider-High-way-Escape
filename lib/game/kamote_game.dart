@@ -8,7 +8,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart' show AppLifecycleState, KeyEventResult;
 
 import '../models/barkada_model.dart';
+import '../models/leaderboard_model.dart';
 import '../models/mission_model.dart';
+import '../models/motorcycle_model.dart';
+import '../models/upgrade_model.dart';
 import '../services/audio_service.dart';
 import '../services/mission_service.dart';
 import '../services/player_profile.dart';
@@ -21,6 +24,7 @@ import 'components/highway_entity.dart';
 import 'components/lto_officer.dart';
 import 'components/manhole.dart';
 import 'components/player_motorcycle.dart';
+import 'components/pursuit_officer.dart';
 import 'components/road_animal.dart';
 import 'components/road_obstacle.dart';
 import 'components/road_segment.dart';
@@ -41,10 +45,14 @@ import 'systems/distance_system.dart';
 import 'systems/fuel_system.dart';
 import 'systems/highway_challenge_manager.dart';
 import 'systems/meme_event_manager.dart';
+import 'systems/pursuit_system.dart';
 import 'systems/reward_system.dart';
+import 'systems/shop_system.dart';
 import 'systems/traffic_spawner.dart';
+import 'systems/curve_system.dart';
 import 'systems/underground_manager.dart';
 import 'systems/underground_system.dart';
+import 'systems/violation_system.dart';
 
 /// Kamote Rider: Highway Escape — the Flame game.
 ///
@@ -62,6 +70,7 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     DifficultyLevel? difficultyLevel,
     this.barkada,
   }) : _random = random ?? (barkada != null ? math.Random(barkada.seed) : math.Random()),
+       _curveSeed = barkada != null ? barkada.seed + 17 : (random != null ? 17 : DateTime.now().microsecondsSinceEpoch),
        difficulty = DifficultyConfig.of(barkada?.difficulty ?? difficultyLevel ?? profile.settings.lastDifficulty),
        super(world: HighwayWorld());
 
@@ -72,6 +81,7 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
   static const String fuelOverlay = 'outOfFuel';
   static const String gameOverOverlay = 'gameOver';
   static const String barkadaTurnOverlay = 'barkadaTurn';
+  static const String shopOverlay = 'shop';
   static const List<String> endOverlays = [jailOverlay, ambulanceOverlay, fuelOverlay, gameOverOverlay];
 
   final PlayerProfile profile;
@@ -98,6 +108,18 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
   final ComboSystem combo = ComboSystem();
   final ChallengeRewardManager challengeRewards = ChallengeRewardManager();
   final UndergroundSystem underground = UndergroundSystem();
+  final ViolationSystem violations = ViolationSystem();
+  final BoostSystem boost = BoostSystem();
+  late final PursuitSystem pursuit = PursuitSystem(random: _random);
+
+  /// Road bends are visual only, so they use their own random numbers and
+  /// never shift the traffic and scenery a seeded run produces. A seeded
+  /// game (a Barkada Race, tests) seeds them too.
+  final int _curveSeed;
+  late final CurveSystem curves = CurveSystem(random: math.Random(_curveSeed));
+
+  /// The bike's numbers for this run, garage upgrades included.
+  BikeStats stats = BikeStats.of(MotorcycleCatalog.all.first);
 
   /// Difficulty for every run started by this game instance. Chosen on the
   /// difficulty screen before the game opens; never changes mid-run.
@@ -128,6 +150,7 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
 
   /// Barkada Race: hands the phone to the next player (or shows results).
   VoidCallback? onBarkadaNext;
+  VoidCallback? onOpenLeaderboard;
 
   // Layout.
   double viewHeight = 800;
@@ -240,7 +263,17 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     if (!state.start()) return;
     world.clearRunEntities(_persistent);
     _officer = null;
-    fuel.reset(drainMultiplier: profile.selectedBike.fuelDrainMultiplier * difficulty.fuelDrainMultiplier);
+    stats = profile.selectedStats;
+    fuel.reset(
+      drainMultiplier: stats.fuelDrainMultiplier * difficulty.fuelDrainMultiplier,
+      capacity: stats.fuelCapacity,
+    );
+    violations.reset();
+    boost.reset();
+    pursuit.reset();
+    curves.reset();
+    highScore = profile.data.leaderboard.fold(0, (best, e) => math.max(best, e.score));
+    _beatHighScore = false;
     chase.reset();
     collisions.clear();
     distance.reset();
@@ -264,7 +297,7 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     lastSummary = null;
 
     final bike = profile.selectedBike;
-    player.reset(bike, y: playerY);
+    player.reset(bike, y: playerY, stats: stats);
     player.steeringMultiplier = difficulty.steeringMultiplier;
     road.reset();
     spawner.reset();
@@ -275,11 +308,12 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     missions.beginRun(bike.id);
 
     hud.resetRun();
+    _syncHud();
     hud.setBike(bike.name);
     hud.setDifficulty(difficulty.label, difficulty.color);
     world.add(LtoCheckpoint()..y = playerY - 330);
 
-    for (final o in [...endOverlays, pauseOverlay]) {
+    for (final o in [...endOverlays, pauseOverlay, shopOverlay]) {
       overlays.remove(o);
     }
     overlays.add(hudOverlay);
@@ -299,8 +333,52 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
   void resumeRun() {
     if (!state.resume()) return;
     overlays.remove(pauseOverlay);
+    overlays.remove(shopOverlay);
     audio.resumeLoops();
     resumeEngine();
+  }
+
+  // ------------------------------------------------------------ shop
+
+  /// The shop opens only during normal riding, never mid-fall or mid-ending.
+  bool get canOpenShop => state.isPlaying && !underground.transitioning;
+
+  /// Opens the in-run shop. The run is paused while it is open, so nothing
+  /// can hit the rider while they shop.
+  void openShop() {
+    if (!canOpenShop || !state.pause()) return;
+    audio.pauseLoops();
+    audio.play(Sfx.click);
+    overlays.add(shopOverlay);
+    pauseEngine();
+  }
+
+  void closeShop() => resumeRun();
+
+  /// Buys [item] with the money collected this run. Charges only when the
+  /// item can actually be used right now.
+  ShopResult buy(ShopItem item) {
+    if (!state.isPaused && !state.isPlaying) return ShopResult.unavailable;
+    switch (item.kind) {
+      case ShopItemKind.fuel:
+        if (fuel.isFull) return ShopResult.tankFull;
+      case ShopItemKind.booster:
+        if (boost.active) return ShopResult.boostActive;
+        if (boost.coolingDown) return ShopResult.boostCoolingDown;
+    }
+    if (!rewards.spend(item.price)) return ShopResult.insufficientFunds;
+    switch (item.kind) {
+      case ShopItemKind.fuel:
+        fuel.refillFraction(item.fuelFraction);
+        _lowFuelWarned = fuel.isLow;
+        audio.play(Sfx.fuel);
+      case ShopItemKind.booster:
+        boost.start(item.boostSeconds);
+        audio.play(Sfx.whoosh);
+    }
+    _syncHud();
+    hud.flush();
+    return ShopResult.success;
   }
 
   void restartRun() {
@@ -320,6 +398,12 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     _abandonLiveRun();
     audio.stopAllLoops();
     onOpenGarage?.call();
+  }
+
+  void openLeaderboard() {
+    _abandonLiveRun();
+    audio.stopAllLoops();
+    onOpenLeaderboard?.call();
   }
 
   /// Quitting keeps whatever was earned so far; the run is banked once.
@@ -396,13 +480,18 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
       case null:
         break;
     }
-    final bike = player.bike;
-    final target = bike.topSpeedKmh * Difficulty.at(distance.meters, difficulty).speedMultiplier;
+    if (boost.update(dt)) hud.toast('Booster finished. Ready again in ${BoostSystem.cooldownSeconds.round()} s.');
+    final boosting = boost.active;
+    final target =
+        stats.topSpeedKmh *
+        Difficulty.at(distance.meters, difficulty).speedMultiplier *
+        (boosting ? BoostSystem.speedMultiplier : 1);
+    final acceleration = stats.accelerationKmhPerSec * (boosting ? BoostSystem.accelerationMultiplier : 1);
     if (underground.phase == UndergroundPhase.falling) {
       // Dropping down the shaft: the road slows to a crawl.
       speedKmh = math.max(0, speedKmh - 160 * dt);
     } else if (speedKmh < target) {
-      speedKmh = math.min(target, speedKmh + bike.accelerationKmhPerSec * dt);
+      speedKmh = math.min(target, speedKmh + acceleration * dt);
     } else {
       speedKmh = math.max(target, speedKmh - 40 * dt);
     }
@@ -431,6 +520,16 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     final km = distance.advance(frameMeters);
     if (km != null) _onKilometer(km);
     if (!_hadCollision) _cleanMeters += frameMeters;
+
+    // LTO officers cannot follow the rider underground.
+    final level = pursuit.updateDistance(distance.meters);
+    if (level != null) _onPursuitLevel(level);
+    if (!underground.showsTunnel && !underground.transitioning && pursuit.tick(dt)) {
+      pursuit.moveDone(placed: _sendPursuitOfficer());
+    }
+
+    // The road bends only on the surface; the tunnel is straight.
+    if (!underground.showsTunnel) curves.update(distance.meters, frameMeters);
 
     final whole = distance.meters.floor();
     if (whole != _lastWholeMeters) {
@@ -512,8 +611,10 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     switch (event.outcome) {
       case CollisionOutcome.headOn:
         source.onStruck(event.outcome);
+        _chargeViolation(Violation.collision);
         _endRun(EndReason.headOnCrash);
       case CollisionOutcome.sideCollision:
+        _chargeViolation(_violationFor(event.kind));
         if (chase.active) {
           source.onStruck(event.outcome);
           _impactFx(source, big: false);
@@ -526,12 +627,11 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
         audio.startLoop(LoopSound.siren);
         audio.play(Sfx.whistle);
         _meme(MemeEvent.chaseStart);
-        hud.toast(
-          event.kind == HazardKind.roadEdge
-              ? 'Scraped the guardrail! LTO is after you!'
-              : 'Kamote move! LTO is after you!',
-          color: const Color(0xFFFF8A80),
-        );
+        hud.toast(switch (event.kind) {
+          HazardKind.roadEdge => 'Scraped the guardrail! LTO is after you!',
+          HazardKind.officer => 'You rammed the LTO! Now they\'re really after you!',
+          _ => 'Kamote move! LTO is after you!',
+        }, color: const Color(0xFFFF8A80));
       case CollisionOutcome.minor:
         source.onStruck(event.outcome);
         final animal = event.kind == HazardKind.animal;
@@ -558,9 +658,50 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     }
   }
 
+  static Violation _violationFor(HazardKind kind) => switch (kind) {
+    HazardKind.roadEdge => Violation.leftRoad,
+    HazardKind.barrier => Violation.ignoredRoadClosure,
+    HazardKind.officer => Violation.hitOfficer,
+    _ => Violation.collision,
+  };
+
+  /// Records one violation and takes its penalty from the run's money,
+  /// never more than the rider has. Called once per resolved collision.
+  void _chargeViolation(Violation v) {
+    final penalty = violations.record(v);
+    final taken = rewards.penalize(penalty);
+    final cost = taken == 0
+        ? 'no cash to fine'
+        : taken < penalty
+        ? '-${_peso(taken)} (all your cash)'
+        : '-${_peso(taken)} PENALTY';
+    hud.toast('TRAFFIC VIOLATION! ${v.label}: $cost', color: const Color(0xFFFFAB40), seconds: 2.6);
+    if (violations.count >= ViolationSystem.warnAt && violations.count % ViolationSystem.warnAt == 0) {
+      hud.toast('TOO MANY VIOLATIONS! YOUR EARNINGS ARE DECREASING!', color: const Color(0xFFFF5252), seconds: 2.6);
+    }
+    if (taken > 0) {
+      world.add(
+        FloatingText(
+          '-${_peso(taken)}',
+          position: Vector2(player.x, player.y - 64),
+          color: const Color(0xFFFF8A80),
+          fontSize: 15,
+        ),
+      );
+    }
+  }
+
+  static String _peso(int amount) => '₱$amount';
+
   void _onSideHit(Hazard source, CollisionEvent event) {
     source.onStruck(event.outcome);
-    if (source is TrafficVehicle || source is RoadObstacle) {
+    if (source is PursuitOfficer) {
+      // Bounce off away from the officer's lane.
+      final dir = player.x < source.x ? -1 : 1;
+      var newLane = source.lane + dir;
+      if (newLane < 0 || newLane >= GameConfig.laneCount) newLane = source.lane - dir;
+      player.knockTo(newLane);
+    } else if (source is TrafficVehicle || source is RoadObstacle) {
       final lane = (source as HighwayEntity).lane;
       final dir = player.x < source.x ? -1 : 1;
       var newLane = lane + dir;
@@ -866,6 +1007,46 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     }
   }
 
+  /// A 5 km milestone added an LTO officer to the pursuit.
+  void _onPursuitLevel(int level) {
+    hud.showBanner(
+      PursuitSystem.milestoneMessage(level),
+      level == 1 ? 'Officers will try to block a lane. Watch your sides!' : 'More officers, more blocked lanes.',
+      const Color(0xFF82B1FF),
+    );
+    audio.play(Sfx.whistle);
+    audio.play(Sfx.challenge, gain: 0.8);
+    audio.haptic(heavy: true);
+    _meme(MemeEvent.chaseStart);
+  }
+
+  /// Sends one pursuing officer to ride beside the rider and hold a lane.
+  /// The lane is booked with the traffic planner first, so the road always
+  /// keeps an escape lane; returns false when no lane is fair right now.
+  bool _sendPursuitOfficer() {
+    if (!state.acceptsGameplay || underground.showsTunnel || underground.transitioning) return false;
+    final busy = world.children.whereType<PursuitOfficer>().any((o) => o.phase != PursuitPhase.retreating);
+    if (busy) return false;
+    final rider = player.lane;
+    final beside = [rider - 1, rider + 1].where((l) => l >= 0 && l < GameConfig.laneCount).toList()..shuffle(_random);
+    final others = [
+      for (var l = 0; l < GameConfig.laneCount; l++)
+        if (l != rider && !beside.contains(l)) l,
+    ];
+    final start = runTime + PursuitSystem.approachSeconds * 0.5;
+    final end = runTime + PursuitSystem.approachSeconds + PursuitSystem.holdSeconds;
+    final scheduler = spawner.scheduler;
+    for (final lane in [...beside, ...others]) {
+      if (!scheduler.isClear(lane, start, end) || !scheduler.canBlock(lane, start, end)) continue;
+      scheduler.block(lane, start, end);
+      world.add(PursuitOfficer(lane: lane));
+      audio.play(Sfx.whistle, gain: 0.6);
+      hud.toast('LTO ON YOUR ${lane < rider ? 'LEFT' : 'RIGHT'}! Don\'t switch lanes!', color: const Color(0xFF82B1FF));
+      return true;
+    }
+    return false;
+  }
+
   void _spawnOfficer() {
     final existing = _officer;
     if (existing != null && !existing.isRemoving && !existing.isRemoved && existing.parent != null) {
@@ -882,6 +1063,9 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     if (!state.beginEnding(reason)) return;
     collisions.clear();
     _endingTimer = 0;
+    for (final o in world.children.whereType<PursuitOfficer>()) {
+      o.retreat();
+    }
     player.braking = true;
     audio.stopLoop(LoopSound.engine);
     switch (reason) {
@@ -944,6 +1128,8 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
       missionsCompleted: missions.completedThisRun,
       bestCombo: combo.bestCombo,
       difficultyLabel: difficulty.label,
+      violations: violations.count,
+      maxPursuitLevel: pursuit.maxLevel,
     );
     if (result != null) {
       lastSummary = profile.applyRun(result, playerName: barkada?.currentName);
@@ -980,7 +1166,23 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     );
   }
 
+  /// Best score on this phone's leaderboard when the run started (0 when
+  /// there is none yet): the score to beat.
+  int highScore = 0;
+  bool _beatHighScore = false;
+
+  /// This run's score so far, worked out exactly like the leaderboard does.
+  int get liveScore =>
+      LeaderboardEntry.scoreFor(distanceMeters: distance.meters, earnings: rewards.grossEarnings - rewards.penaltyCash);
+
   void _syncHud() {
+    final score = liveScore;
+    hud.setScore(score, highScore);
+    if (!_beatHighScore && highScore > 0 && score > highScore && state.acceptsGameplay) {
+      _beatHighScore = true;
+      hud.toast('NEW HIGH SCORE! You beat the record. Keep riding!', color: const Color(0xFFFFD740), seconds: 3);
+      audio.play(Sfx.mission);
+    }
     hud.setDistance(distance.meters);
     hud.setSpeed(speedKmh);
     hud.setFuel(fuel.fraction);
@@ -989,5 +1191,8 @@ class KamoteGame extends FlameGame<HighwayWorld> with HasCollisionDetection, Key
     hud.setChase(active: chase.active, remaining: chase.remaining);
     hud.setInvulnerable(player.isInvulnerable);
     hud.setUnderground(active: underground.showsTunnel, remaining: underground.remaining);
+    hud.setViolations(violations.count);
+    hud.setPursuit(pursuit.level);
+    hud.setBoost(active: boost.active, remaining: boost.remaining, cooldown: boost.cooldown);
   }
 }

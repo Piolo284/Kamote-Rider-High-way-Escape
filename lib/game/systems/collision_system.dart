@@ -22,6 +22,9 @@ enum HazardKind {
 
   /// Dog, cat or chicken crossing. Minor (sudden stop), never a chase.
   animal,
+
+  /// LTO officer riding beside the rider to block a lane.
+  officer,
 }
 
 /// Gameplay outcome of a collision, ordered by priority (highest last).
@@ -81,6 +84,7 @@ CollisionOutcome outcomeFor({required HazardKind kind, required bool oncoming, I
       return oncoming && axis == ImpactAxis.frontal ? CollisionOutcome.headOn : CollisionOutcome.sideCollision;
     case HazardKind.roadEdge:
     case HazardKind.barrier:
+    case HazardKind.officer:
       return CollisionOutcome.sideCollision;
     case HazardKind.cone:
     case HazardKind.pothole:

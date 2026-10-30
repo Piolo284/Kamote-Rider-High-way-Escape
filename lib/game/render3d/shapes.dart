@@ -61,12 +61,14 @@ class Shapes {
 
     final len = near - far;
     final height = top - bottom;
-    if (cam.camX < left) {
+    // On a bend the block sits where the road has drifted to.
+    final bend = cam.bendX(near);
+    if (cam.camX < left + bend) {
       _quad(c, [fTL, nTL, nBL, fBL], shade(color, 0.32));
       if (sideFace != null) {
         paintOnQuad(c, Rect.fromLTWH(0, 0, len, height), [fTL, nTL, nBL, fBL], (c) => sideFace(c, Size(len, height)));
       }
-    } else if (cam.camX > right) {
+    } else if (cam.camX > right + bend) {
       _quad(c, [fTR, nTR, nBR, fBR], shade(color, 0.32));
       if (sideFace != null) {
         paintOnQuad(c, Rect.fromLTWH(0, 0, len, height), [fTR, nTR, nBR, fBR], (c) => sideFace(c, Size(len, height)));

@@ -51,7 +51,8 @@ class RiderView {
         body: bike.bodyColor,
         accent: bike.accentColor,
         jacket: Color.lerp(bike.accentColor, const Color(0xFF263238), 0.55)!,
-        helmet: bike.accentColor,
+        // The kamote rides bareheaded (a fictional arcade design choice).
+        helmet: null,
         braking: braking,
         anim: anim,
       );
@@ -123,7 +124,7 @@ class RiderView {
     required Color body,
     required Color accent,
     required Color jacket,
-    required Color helmet,
+    required Color? helmet,
     bool braking = false,
     double anim = 0,
   }) {
@@ -188,8 +189,12 @@ class RiderView {
     _p.color = const Color(0x22FFFFFF);
     c.drawRRect(RRect.fromLTRBR(-9, -60, -3, -36, const Radius.circular(4)), _p);
 
-    // Helmet bobbing slightly with the road.
+    // Head bobbing slightly with the road.
     final bob = anim == 0 ? 0.0 : (anim * 9 % 2 < 1 ? 0.4 : -0.4);
+    if (helmet == null) {
+      _bareHead(c, bob);
+      return;
+    }
     _p.color = Shapes.shade(helmet, 0.3);
     c.drawRect(Rect.fromLTWH(-3.5, -66 + bob, 7, 5), _p);
     _p.color = helmet;
@@ -198,6 +203,23 @@ class RiderView {
     c.drawRect(Rect.fromLTWH(-1.6, -80 + bob, 3.2, 17), _p);
     _p.color = const Color(0x55FFFFFF);
     c.drawCircle(Offset(-3.5, -75 + bob), 2.8, _p);
+  }
+
+  static const _skin = Color(0xFFC68E5E);
+  static const _hair = Color(0xFF2B1D14);
+
+  /// Back of a bare head: neck, ears and short dark hair.
+  static void _bareHead(Canvas c, double bob) {
+    _p.color = Shapes.shade(_skin, 0.15);
+    c.drawRect(Rect.fromLTWH(-3.2, -66 + bob, 6.4, 5), _p);
+    _p.color = _skin;
+    c.drawCircle(Offset(-7.6, -70 + bob), 2.2, _p);
+    c.drawCircle(Offset(7.6, -70 + bob), 2.2, _p);
+    c.drawOval(Rect.fromCenter(center: Offset(0, -67 + bob), width: 10, height: 5), _p);
+    _p.color = _hair;
+    c.drawCircle(Offset(0, -71.5 + bob), 7.8, _p);
+    _p.color = const Color(0x33FFFFFF);
+    c.drawCircle(Offset(-2.6, -75 + bob), 2.4, _p);
   }
 
   /// Seat, tail section and tail light, shaped per bike style.

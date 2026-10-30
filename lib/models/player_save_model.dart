@@ -1,8 +1,11 @@
 import '../game/difficulty_config.dart';
 import '../game/systems/meme_event_manager.dart';
+import '../game/systems/swipe_steering.dart';
+import '../game/systems/tilt_steering.dart';
 import 'leaderboard_model.dart';
 import 'mission_model.dart';
 import 'motorcycle_model.dart';
+import 'upgrade_model.dart';
 
 /// Player-adjustable settings.
 class GameSettings {
@@ -12,6 +15,9 @@ class GameSettings {
     this.musicVolume = 0.6,
     this.sfxVolume = 0.9,
     this.showSteerButtons = true,
+    this.steerSensitivity = 1,
+    this.tiltSteering = false,
+    this.tiltRange = TiltSteering.defaultRange,
     this.haptics = true,
     this.memeSounds = true,
     this.memePopups = MemePopupMode.full,
@@ -23,6 +29,16 @@ class GameSettings {
   double musicVolume;
   double sfxVolume;
   bool showSteerButtons;
+
+  /// Swipe sensitivity: higher means a shorter swipe changes lanes.
+  /// Buttons and keys are not affected.
+  double steerSensitivity;
+
+  /// Steer by tilting the phone (swipe and buttons keep working).
+  bool tiltSteering;
+
+  /// Degrees of tilt that reach an outer lane.
+  double tiltRange;
   bool haptics;
 
   /// Meme stingers and voice lines, independent from other sound effects.
@@ -38,6 +54,9 @@ class GameSettings {
     'musicVol': musicVolume,
     'sfxVol': sfxVolume,
     'buttons': showSteerButtons,
+    'steerSens': steerSensitivity,
+    'tilt': tiltSteering,
+    'tiltRange': tiltRange,
     'haptics': haptics,
     'memeSounds': memeSounds,
     'memePopups': memePopups.name,
@@ -54,12 +73,21 @@ class GameSettings {
       return fallback;
     }
 
+    final sens = raw['steerSens'];
+    final range = raw['tiltRange'];
     return GameSettings(
       musicEnabled: readBool('music', d.musicEnabled),
       sfxEnabled: readBool('sfx', d.sfxEnabled),
       musicVolume: readVol('musicVol', d.musicVolume),
       sfxVolume: readVol('sfxVol', d.sfxVolume),
       showSteerButtons: readBool('buttons', d.showSteerButtons),
+      steerSensitivity: sens is num && sens.isFinite
+          ? sens.toDouble().clamp(SwipeSteering.minSensitivity, SwipeSteering.maxSensitivity)
+          : d.steerSensitivity,
+      tiltSteering: readBool('tilt', d.tiltSteering),
+      tiltRange: range is num && range.isFinite
+          ? range.toDouble().clamp(TiltSteering.minRange, TiltSteering.maxRange)
+          : d.tiltRange,
       haptics: readBool('haptics', d.haptics),
       memeSounds: readBool('memeSounds', d.memeSounds),
       memePopups: MemePopupMode.values.firstWhere((m) => m.name == raw['memePopups'], orElse: () => d.memePopups),
@@ -84,8 +112,10 @@ class PlayerSaveModel {
     GameSettings? settings,
     String? playerName,
     List<LeaderboardEntry>? leaderboard,
+    Map<String, UpgradeLevels>? upgrades,
   }) : playerName = Leaderboard.cleanName(playerName),
        leaderboard = leaderboard ?? [],
+       upgrades = upgrades ?? {},
        unlockedBikes = unlockedBikes ?? {MotorcycleCatalog.starterId},
        missions = missions ?? {},
        settings = settings ?? GameSettings() {
@@ -109,7 +139,12 @@ class PlayerSaveModel {
   /// Finished runs, highest score first.
   final List<LeaderboardEntry> leaderboard;
 
+  /// Garage upgrades per motorcycle id. Bikes without an entry are stock.
+  final Map<String, UpgradeLevels> upgrades;
+
   MissionState missionState(String id) => missions.putIfAbsent(id, MissionState.new);
+
+  UpgradeLevels upgradesOf(String bikeId) => upgrades.putIfAbsent(bikeId, UpgradeLevels.new);
 
   /// Repairs invalid values so a corrupted or outdated save can never crash
   /// the game or produce impossible states.
@@ -121,6 +156,7 @@ class PlayerSaveModel {
     unlockedBikes.removeWhere((id) => !MotorcycleCatalog.exists(id));
     unlockedBikes.add(MotorcycleCatalog.starterId);
     if (!unlockedBikes.contains(selectedBike)) selectedBike = MotorcycleCatalog.starterId;
+    upgrades.removeWhere((id, _) => !MotorcycleCatalog.exists(id));
     missions.removeWhere((id, _) => MissionCatalog.byId(id) == null);
     for (final def in MissionCatalog.all) {
       missions.putIfAbsent(def.id, MissionState.new);
@@ -140,6 +176,10 @@ class PlayerSaveModel {
     'settings': settings.toJson(),
     'name': playerName,
     'board': [for (final e in leaderboard) e.toJson()],
+    'upg': {
+      for (final e in upgrades.entries)
+        if (e.value.purchased > 0) e.key: e.value.toJson(),
+    },
   };
 
   factory PlayerSaveModel.fromJson(Object? raw) {
@@ -175,6 +215,12 @@ class PlayerSaveModel {
         for (final v in boardRaw) ?LeaderboardEntry.fromJson(v),
     ];
     final name = raw['name'];
+    final upgradesRaw = raw['upg'];
+    final upgrades = <String, UpgradeLevels>{
+      if (upgradesRaw is Map)
+        for (final e in upgradesRaw.entries)
+          if (e.key is String) e.key as String: UpgradeLevels.fromJson(e.value),
+    };
 
     return PlayerSaveModel(
       wallet: readInt('wallet'),
@@ -187,6 +233,7 @@ class PlayerSaveModel {
       settings: GameSettings.fromJson(raw['settings']),
       playerName: name is String ? name : null,
       leaderboard: board,
+      upgrades: upgrades,
     );
   }
 }

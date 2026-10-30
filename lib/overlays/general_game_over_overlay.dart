@@ -76,13 +76,25 @@ class GameOverPanel extends StatelessWidget {
                             formatPeso(result?.challengeCash ?? 0),
                           ),
                           const Divider(),
+                          _line('Money collected', formatPeso(result?.grossEarnings ?? 0)),
+                          _line('Spent on gas & boosters', '-${formatPeso(result?.spentCash ?? 0)}'),
                           _line(
-                            'Run earnings',
+                            'Violation penalties (${result?.violations ?? 0})',
+                            '-${formatPeso(result?.penaltyCash ?? 0)}',
+                            color: (result?.penaltyCash ?? 0) > 0 ? const Color(0xFFFF8A80) : KColors.text,
+                          ),
+                          const Divider(),
+                          _line(
+                            'Final money earned',
                             formatPeso(result?.totalEarnings ?? 0),
                             big: true,
                             color: KColors.yellow,
                           ),
                           _line('Wallet balance', formatPeso(summary?.walletAfter ?? game.profile.data.wallet)),
+                          const Divider(),
+                          _line('Violations committed', '${result?.violations ?? game.violations.count}'),
+                          _line('Highest LTO pursuit', _pursuitText(result?.maxPursuitLevel ?? game.pursuit.maxLevel)),
+                          _line('Best distance record', formatDistance(game.profile.data.bestDistance)),
                           if (result != null) ...[
                             const Divider(),
                             _line(
@@ -128,7 +140,7 @@ class GameOverPanel extends StatelessWidget {
                         onPressed: game.exitToMenu,
                       ),
                     ] else ...[
-                      ArcadeButton(label: 'RESTART', icon: Icons.replay_rounded, onPressed: game.restartRun),
+                      ArcadeButton(label: 'RETRY', icon: Icons.replay_rounded, onPressed: game.restartRun),
                       const SizedBox(height: 10),
                       Row(
                         children: [
@@ -145,15 +157,24 @@ class GameOverPanel extends StatelessWidget {
                           const SizedBox(width: 10),
                           Expanded(
                             child: ArcadeButton(
-                              label: 'MENU',
-                              icon: Icons.home_rounded,
-                              color: const Color(0xFF546E7A),
+                              label: 'LEADERBOARD',
+                              icon: Icons.leaderboard_rounded,
+                              color: const Color(0xFFF57C00),
                               textColor: Colors.white,
-                              fontSize: 15,
-                              onPressed: game.exitToMenu,
+                              fontSize: 13,
+                              onPressed: game.openLeaderboard,
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 10),
+                      ArcadeButton(
+                        label: 'MAIN MENU',
+                        icon: Icons.home_rounded,
+                        color: const Color(0xFF546E7A),
+                        textColor: Colors.white,
+                        fontSize: 15,
+                        onPressed: game.exitToMenu,
                       ),
                     ],
                   ],
@@ -165,6 +186,8 @@ class GameOverPanel extends StatelessWidget {
       ),
     );
   }
+
+  static String _pursuitText(int level) => level == 0 ? 'None' : '$level officer${level == 1 ? '' : 's'}';
 
   Widget _badge(String text, Color color) => Container(
     margin: const EdgeInsets.only(bottom: 8),

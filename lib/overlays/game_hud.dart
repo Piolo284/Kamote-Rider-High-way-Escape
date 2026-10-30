@@ -29,7 +29,7 @@ class GameHud extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _TopBar(hud: hud, onPause: game.pauseRun),
+                    _TopBar(hud: hud, onPause: game.pauseRun, onShop: game.openShop),
                     const SizedBox(height: 6),
                     if (hud.chaseActive) _ChaseBanner(remaining: hud.chaseRemaining),
                     if (hud.undergroundActive) _UndergroundBanner(remaining: hud.undergroundRemaining),
@@ -80,10 +80,11 @@ class GameHud extends StatelessWidget {
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.hud, required this.onPause});
+  const _TopBar({required this.hud, required this.onPause, required this.onShop});
 
   final HudModel hud;
   final VoidCallback onPause;
+  final VoidCallback onShop;
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +102,15 @@ class _TopBar extends StatelessWidget {
               Expanded(
                 child: _FuelGauge(fraction: hud.fuelFraction, low: hud.lowFuel),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
+              IconButton(
+                tooltip: 'Shop',
+                onPressed: onShop,
+                visualDensity: VisualDensity.compact,
+                style: IconButton.styleFrom(backgroundColor: KColors.yellow.withValues(alpha: 0.22)),
+                icon: const Icon(Icons.storefront_rounded, color: KColors.yellow),
+              ),
+              const SizedBox(width: 4),
               IconButton(
                 tooltip: 'Pause',
                 onPressed: onPause,
@@ -125,6 +134,10 @@ class _TopBar extends StatelessWidget {
               _Stat(icon: Icons.payments_rounded, text: formatPeso(hud.runCash), color: KColors.yellow),
             ],
           ),
+          const SizedBox(height: 5),
+          _ScoreRow(score: hud.score, highScore: hud.highScore),
+          const SizedBox(height: 5),
+          _StatusRow(hud: hud),
           const SizedBox(height: 4),
           Row(
             children: [
@@ -164,6 +177,95 @@ class _TopBar extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The run's score next to the score to beat, and how far off it is.
+class _ScoreRow extends StatelessWidget {
+  const _ScoreRow({required this.score, required this.highScore});
+
+  final int score;
+  final int highScore;
+
+  @override
+  Widget build(BuildContext context) {
+    const gold = Color(0xFFFFD740);
+    final beaten = highScore > 0 && score > highScore;
+    final Widget target;
+    if (highScore == 0) {
+      target = const Text(
+        'HIGH: set the first record!',
+        style: TextStyle(color: KColors.muted, fontSize: 12, fontWeight: FontWeight.w700),
+      );
+    } else if (beaten) {
+      target = const _Chip(text: 'NEW HIGH SCORE!', color: gold);
+    } else {
+      target = Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: 'HIGH ${formatScore(highScore)}',
+              style: const TextStyle(color: gold, fontWeight: FontWeight.w900, fontSize: 13),
+            ),
+            TextSpan(
+              text: '  ${formatScore(highScore - score)} to go',
+              style: const TextStyle(color: KColors.muted, fontWeight: FontWeight.w700, fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }
+    return Row(
+      children: [
+        const Icon(Icons.emoji_events_rounded, size: 16, color: gold),
+        const SizedBox(width: 4),
+        Text(
+          'SCORE ${formatScore(score)}',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: FittedBox(fit: BoxFit.scaleDown, child: target),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Hearts, violations, LTO pursuit level and booster, on one line.
+class _StatusRow extends StatelessWidget {
+  const _StatusRow({required this.hud});
+
+  final HudModel hud;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Spacer(),
+        Flexible(
+          child: Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              if (hud.boostActive)
+                _Chip(text: 'BOOST ${hud.boostRemaining.toStringAsFixed(1)}s', color: const Color(0xFFFF9100))
+              else if (hud.boostCooldown > 0)
+                _Chip(text: 'BOOST ${hud.boostCooldown.round()}s', color: KColors.muted),
+              if (hud.pursuitLevel > 0) _Chip(text: 'LTO ×${hud.pursuitLevel}', color: const Color(0xFF82B1FF)),
+              _Chip(
+                text: '${hud.violations} VIOLATION${hud.violations == 1 ? '' : 'S'}',
+                color: hud.violations == 0 ? KColors.muted : const Color(0xFFFFAB40),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

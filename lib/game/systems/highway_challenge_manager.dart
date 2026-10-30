@@ -247,6 +247,10 @@ class HighwayChallengeManager extends Component with HasGameReference<KamoteGame
 
   double _nextIn = 0;
   ChallengeType? _pending;
+
+  /// True while a challenge waits for room or is about to be picked, so the
+  /// spawner can leave the road a little lighter for it.
+  bool get challengeSoon => enabled && (_pending != null || _nextIn < 2.5);
   double _pendingTimeout = 0;
   double _lastFuelEmergency = -1e9;
   final List<ChallengeType> started = [];

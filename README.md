@@ -10,7 +10,9 @@ You ride through five changing worlds and pick up paper money and fuel. Avoid tr
 
 | Action | Control |
 |---|---|
-| Change lane | Swipe left/right (one lane per ~26 px of drag) or tap the on-screen ◀ ▶ buttons |
+| Change lane | Swipe left/right (one lane per ~26 px of drag at the default sensitivity) or tap the on-screen ◀ ▶ buttons |
+| Swipe sensitivity | **Settings → Swipe sensitivity**, 0.5× (longer swipe, 52 px per lane) to 2× (shorter swipe, 13 px per lane). It only changes how far you swipe, never how fast the bike changes lanes, so scores stay fair. |
+| Tilt steering | **Settings → Tilt steering** (off by default). Tilt the phone left or right to pick a lane: level is the middle of the road, and the **Tilt needed** angle (12–40°, default 25°) reaches the outer lane. The grip you hold when a ride starts (or resumes) counts as level. Tilt never steers past the outer lanes, and swipe and buttons keep working. Uses the accelerometer through `sensors_plus`; without a sensor the game just ignores it. |
 | Desktop testing | Arrow keys or A/D; P or Esc to pause |
 | Pause | ⏸ button at top-right, or the Android Back button |
 
@@ -20,21 +22,28 @@ You ride through five changing worlds and pick up paper money and fuel. Avoid tr
 - **Fuel** keeps dropping while you ride. Red jerry cans refill 28% of the tank. When the tank hits zero, you get the **Out of Fuel** ending.
 - **Paper bills** (₱20/₱50/₱100) add to your run earnings. Every kilometer pays a milestone bonus. Surviving a chase pays a ₱75 escape bonus.
 - **LTO checkpoint:** every run starts by riding past a checkpoint, and the officer chases you for 10 seconds.
-- **Side collisions** start a 10-second LTO chase. These are scraping the guardrail, hitting the side or rear of a car, or hitting a barrier.
+- **Side collisions** start a 10-second LTO chase. These are scraping the guardrail, hitting the side or rear of a car or train, hitting a barrier, or ramming an LTO officer.
 - A **second side collision during any chase** gives you the **Ticket & Jail** ending.
+- **Traffic violations.** Every side collision and every head-on crash is a violation with a ₱100 penalty (`ViolationSystem.defaultPenalty`) taken from your run cash, with a notice that names the reason. A penalty never takes more than you have, and one crash is never charged twice.
+- **Roadside shop** (🏪 button in the HUD). The ride pauses while it is open. Spend your run cash on gasoline (Small 25% ₱60, Medium 50% ₱110, Large 100% ₱200; never overfills) or a speed booster (5 s ₱50, 10 s ₱90, 15 s ₱120). Boosters raise top speed by 30%, give no crash protection, and have a 15-second cooldown.
+- **LTO pursuit.** From 5 km on, one more officer joins the pursuit every 5 km (5 km: 1, 10 km: 2, and so on), with a milestone banner. Now and then one rides up beside you and holds a lane for a few seconds after a warning. Their lane is booked with the traffic planner, so an escape lane always stays open. Officers can't follow you underground.
 - **Potholes and cones** are minor: they slow you down and make the bike wobble, but never start a chase.
+- **The two left lanes carry oncoming traffic**, and they are busy: besides the row's usual vehicle, each traffic row has an extra chance of an oncoming one (`TrafficSpawner.extraOncomingShare`). The extra traffic gives way while a challenge needs room, skips the tunnel, and still goes through the escape-lane planner.
 - **Hitting oncoming traffic head-on** (the two left lanes) gives you the **Ambulance** ending right away. A red ▼ warning shows at the top of the lane before an oncoming car appears.
 - After any hit, you are briefly invulnerable (1.2–1.6 s depending on difficulty) while you get knocked aside. This stops one crash from counting twice.
 - **Dogs, cats and chickens** sometimes cross the road. Bumping one is a minor hit: you stop short, the animal hops away unhurt, and there's no chase.
 - The world changes every **1 km**: City Highway → Provincial Road → Mountain Road → Coastal Highway → Urban Road. Then the loop repeats with heavier traffic.
+- **Curves.** The first kilometer is straight. Gentle left and right bends start at 1 km and grow more frequent and sharper at 3, 5, 10 and 15 km. Bends change gradually (a full swing takes about 250 m). They are drawn by the chase camera only: at the rider's own row the road never shifts, so lanes, collisions and the escape-lane rule are the same as on a straight road. The tunnel stays straight.
 
 **Collision policy (in priority order).** If several hits happen in the same frame, only the most serious one counts:
 
-1. Head-on with oncoming traffic: the run ends (ambulance).
-2. Side collision: the chase starts. If a chase is already running, you go to jail.
+1. Head-on with oncoming traffic: a violation, and the run ends at once (ambulance).
+2. Side collision: a violation; the chase starts. If a chase is already running, you go to jail.
 3. Minor hazard: you slow down.
 
 There is only ever **one chase timer**. The checkpoint chase counts as your first offense, and a new collision never restarts or stacks the timer.
+
+**Score and money.** Run cash = everything collected, minus shop spending, minus penalties; that is what goes into your wallet. The leaderboard score is distance + collected money − penalties, so buying gasoline to ride farther never lowers your score.
 
 ### Difficulty
 
@@ -129,6 +138,7 @@ The game uses:
 - `flame`: game loop, components and collision detection
 - `flame_audio`: music and sound effects
 - `shared_preferences`: saves your progress on the device
+- `sensors_plus`: reads the accelerometer for tilt steering
 - `flame_test`: testing helpers (dev only)
 
 To recreate this project from scratch, run `flutter create kamote_rider`, then `flutter pub add flame flame_audio shared_preferences` and `flutter pub add dev:flame_test`.
@@ -153,7 +163,7 @@ To quickly try it on Windows without Android, run `flutter run -d windows` and s
 ### 2.7 Checks
 ```
 flutter analyze        # static analysis (should print "No issues found!")
-flutter test           # 133 unit, game-simulation, render and widget tests
+flutter test           # 196 unit, game-simulation, render and widget tests
 ```
 
 ---
@@ -254,12 +264,28 @@ What the stats do:
 
 Fuel cans spawn on a timer, not by distance, so fast bikes that burn a lot of fuel still have to be managed. You can tune all of this in `models/motorcycle_model.dart` and `game/game_config.dart`.
 
+### Upgrades
+
+Every owned motorcycle has its own upgrades, bought in the garage with wallet money (**UPGRADE** on the bike's card). Each category goes from Level 1 to Level 5 and is saved permanently per bike.
+
+| Upgrade | Per level above 1 | At Level 5 |
+|---|---:|---:|
+| Max Speed | +3% top speed | +12% |
+| Acceleration | +10% | +40% |
+| Handling | −5% lane-change time | −20% |
+| Fuel Efficiency | −5% fuel burn | −20% |
+| Fuel Capacity | +10% tank size | +40% |
+
+The next level costs `(200 + 100 × tier) × 1, 2, 3.5, 5` for Levels 2, 3, 4 and 5 (Kamote 110: ₱300, ₱600, ₱1,050, ₱1,500 per category). Values live in `models/upgrade_model.dart`.
+
 ---
 
 ## 6. Known limitations
 
 - The art is procedural placeholder art in one consistent style. The sound and music are simple synthesized chiptune. Both can be replaced; see `assets/README.md`.
-- The 3D view is drawn with Flutter's 2D canvas (perspective-projected boxes and cut-outs), not a 3D engine. Roads are straight: there are no curves or hills.
+- The 3D view is drawn with Flutter's 2D canvas (perspective-projected boxes and cut-outs), not a 3D engine. Curves are a camera effect on a straight gameplay road, so steering does not need to follow the bend. There are no hills.
+- The rider is drawn without a helmet as a fictional arcade design choice. LTO officers keep theirs.
+- The leaderboard is saved on the device only, and multiplayer is Barkada Race pass-and-play. There is no online leaderboard or Ghost Race.
 - Missions are local and repeatable: each claim raises the level. They do not reset on a real-world daily calendar.
 - The engine sound does not change pitch with speed.
 - The meme sounds are original synthesized stingers, not voice recordings. You can drop in your own recorded voice lines; see `assets/README.md`.

@@ -49,6 +49,13 @@ class HudModel extends ChangeNotifier {
   int combo = 0;
   bool undergroundActive = false;
   double undergroundRemaining = 0;
+  int violations = 0;
+
+  /// LTO officers pursuing (one more every 5 km).
+  int pursuitLevel = 0;
+  bool boostActive = false;
+  double boostRemaining = 0;
+  double boostCooldown = 0;
 
   HudBanner? banner;
 
@@ -81,6 +88,24 @@ class HudModel extends ChangeNotifier {
   void setUnderground({required bool active, required double remaining}) {
     _set(active, undergroundActive, (v) => undergroundActive = v);
     _set((remaining * 10).ceil() / 10, undergroundRemaining, (v) => undergroundRemaining = v);
+  }
+
+  void setViolations(int value) => _set(value, violations, (v) => violations = v);
+  void setPursuit(int level) => _set(level, pursuitLevel, (v) => pursuitLevel = v);
+
+  void setBoost({required bool active, required double remaining, required double cooldown}) {
+    _set(active, boostActive, (v) => boostActive = v);
+    _set((remaining * 10).ceil() / 10, boostRemaining, (v) => boostRemaining = v);
+    _set(cooldown.ceilToDouble(), boostCooldown, (v) => boostCooldown = v);
+  }
+
+  /// This run's score and the score to beat (0 = no record yet).
+  int score = 0;
+  int highScore = 0;
+
+  void setScore(int value, int high) {
+    _set(value, score, (v) => score = v);
+    _set(high, highScore, (v) => highScore = v);
   }
 
   void setBike(String name) => _set(name, bikeName, (v) => bikeName = v);
@@ -140,6 +165,12 @@ class HudModel extends ChangeNotifier {
     undergroundActive = false;
     undergroundRemaining = 0;
     invulnerable = false;
+    violations = 0;
+    pursuitLevel = 0;
+    boostActive = false;
+    boostRemaining = 0;
+    boostCooldown = 0;
+    score = 0;
     banner = null;
     announcement = null;
     meme = null;

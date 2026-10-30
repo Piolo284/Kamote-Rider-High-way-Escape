@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 
 import '../app.dart';
 import '../game/difficulty_config.dart';
 import '../game/kamote_game.dart';
+import '../game/systems/swipe_steering.dart';
+import '../game/systems/tilt_steering.dart';
 import '../models/barkada_model.dart';
 import '../overlays/barkada_turn_overlay.dart';
 import '../overlays/ambulance_overlay.dart';
@@ -11,6 +16,7 @@ import '../overlays/fuel_game_over_overlay.dart';
 import '../overlays/game_hud.dart';
 import '../overlays/general_game_over_overlay.dart';
 import '../overlays/pause_overlay.dart';
+import '../overlays/shop_overlay.dart';
 import '../overlays/ticket_jail_overlay.dart';
 import '../services/app_services.dart';
 import '../widgets/ui_kit.dart';
@@ -33,10 +39,50 @@ class _GameScreenState extends State<GameScreen> {
   KamoteGame? _game;
   bool _leaving = false;
 
-  // Swipe tracking.
-  static const double _swipeStep = 26;
-  double _dragAccum = 0;
-  int _stepsThisDrag = 0;
+  late final SwipeSteering _swipe = SwipeSteering(onSteer: (dir) => _game!.steer(dir));
+
+  late final TiltSteering _tilt = TiltSteering(onSteer: (dir) => _game!.steer(dir));
+  StreamSubscription<AccelerometerEvent>? _tiltSub;
+  DateTime? _lastTilt;
+  bool _tiltWasPlaying = false;
+
+  /// Listens to the accelerometer only while tilt steering is switched on.
+  void _startTilt() {
+    if (_tiltSub != null || !_game!.profile.settings.tiltSteering) return;
+    try {
+      _tiltSub = accelerometerEventStream(samplingPeriod: SensorInterval.gameInterval).listen(
+        _onTilt,
+        // No sensor (emulator, desktop): swipe and buttons still work.
+        onError: (Object _) => _stopTilt(),
+        cancelOnError: true,
+      );
+    } catch (_) {
+      _tiltSub = null;
+    }
+  }
+
+  void _stopTilt() {
+    _tiltSub?.cancel();
+    _tiltSub = null;
+  }
+
+  void _onTilt(AccelerometerEvent e) {
+    final game = _game!;
+    final playing = game.state.isPlaying;
+    if (!playing) {
+      _tiltWasPlaying = false;
+      return;
+    }
+    // Each new ride and each resume takes the current grip as level.
+    if (!_tiltWasPlaying) _tilt.recenter();
+    _tiltWasPlaying = true;
+    final now = e.timestamp;
+    final dt = _lastTilt == null ? 0.02 : (now.difference(_lastTilt!).inMicroseconds / 1e6).clamp(0.0, 0.1);
+    _lastTilt = now;
+    _tilt
+      ..rangeDegrees = game.profile.settings.tiltRange
+      ..update(TiltSteering.rollDegrees(e.x, e.y, e.z), dt, currentLane: game.player.lane);
+  }
 
   @override
   void didChangeDependencies() {
@@ -55,7 +101,9 @@ class _GameScreenState extends State<GameScreen> {
           )
           ..onExitToMenu = _leaveToMenu
           ..onOpenGarage = _leaveToGarage
+          ..onOpenLeaderboard = _leaveToLeaderboard
           ..onBarkadaNext = _nextBarkadaTurn;
+    _startTilt();
   }
 
   void _leaveToMenu() {
@@ -68,6 +116,12 @@ class _GameScreenState extends State<GameScreen> {
     if (_leaving || !mounted) return;
     _leaving = true;
     Navigator.of(context).pushReplacementNamed(Routes.garage);
+  }
+
+  void _leaveToLeaderboard() {
+    if (_leaving || !mounted) return;
+    _leaving = true;
+    Navigator.of(context).pushReplacementNamed(Routes.leaderboard);
   }
 
   void _nextBarkadaTurn() {
@@ -84,6 +138,7 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   void dispose() {
+    _stopTilt();
     _game?.shutdown();
     super.dispose();
   }
@@ -112,26 +167,11 @@ class _GameScreenState extends State<GameScreen> {
         backgroundColor: Colors.black,
         body: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onHorizontalDragStart: (_) {
-            _dragAccum = 0;
-            _stepsThisDrag = 0;
-          },
-          onHorizontalDragUpdate: (d) {
-            _dragAccum += d.delta.dx;
-            // Each threshold crossed mid-drag is one lane, so steering
-            // responds before the finger lifts.
-            while (_dragAccum.abs() >= _swipeStep) {
-              final dir = _dragAccum.sign.toInt();
-              game.steer(dir);
-              _dragAccum -= dir * _swipeStep;
-              _stepsThisDrag++;
-            }
-          },
-          onHorizontalDragEnd: (d) {
-            // A quick flick shorter than the threshold still counts.
-            final v = d.primaryVelocity ?? 0;
-            if (_stepsThisDrag == 0 && v.abs() > 250) game.steer(v.sign.toInt());
-          },
+          onHorizontalDragStart: (_) => _swipe
+            ..sensitivity = game.profile.settings.steerSensitivity
+            ..start(),
+          onHorizontalDragUpdate: (d) => _swipe.update(d.delta.dx),
+          onHorizontalDragEnd: (d) => _swipe.end(d.primaryVelocity ?? 0),
           child: GameWidget<KamoteGame>(
             game: game,
             loadingBuilder: (_) => const _Loading(),
@@ -140,6 +180,7 @@ class _GameScreenState extends State<GameScreen> {
               KamoteGame.barkadaTurnOverlay: (context, g) => BarkadaTurnOverlay(game: g),
               KamoteGame.hudOverlay: (context, g) => GameHud(game: g),
               KamoteGame.pauseOverlay: (context, g) => PauseOverlay(game: g),
+              KamoteGame.shopOverlay: (context, g) => ShopOverlay(game: g),
               KamoteGame.jailOverlay: (context, g) => TicketJailOverlay(game: g),
               KamoteGame.ambulanceOverlay: (context, g) => AmbulanceOverlay(game: g),
               KamoteGame.fuelOverlay: (context, g) => FuelGameOverOverlay(game: g),

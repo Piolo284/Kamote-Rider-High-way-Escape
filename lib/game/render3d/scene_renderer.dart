@@ -10,6 +10,7 @@ import '../components/fuel_collectible.dart';
 import '../components/lto_officer.dart';
 import '../components/manhole.dart';
 import '../components/player_motorcycle.dart';
+import '../components/pursuit_officer.dart';
 import '../components/road_animal.dart';
 import '../components/road_obstacle.dart';
 import '../components/scenery_prop.dart';
@@ -84,7 +85,31 @@ class SceneRenderer {
     canvas.save();
     canvas.clipRect(Rect.fromLTWH(0, 0, size.x, size.y));
 
+    _drawWorld(canvas, env);
+
+    // Weather and speed streaks stay flat on the screen, as before.
+    canvas.save();
+    canvas.translate(size.x / 2, 0);
+    canvas.scale(zoom);
+    canvas.translate(-GameConfig.worldWidth / 2, 0);
+    game.atmosphere.render(canvas);
+    game.speedLines.render(canvas);
+    canvas.restore();
+
+    // Falling into (or climbing out of) the manhole fades through black.
+    final blackout = game.underground.blackout;
+    if (blackout > 0.001) {
+      _p.color = Color.fromRGBO(0, 0, 0, blackout.clamp(0.0, 1.0));
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.x, size.y), _p);
+    }
+
+    canvas.restore();
+  }
+
+  void _drawWorld(Canvas canvas, int env) {
     final tunnel = env == Environments.undergroundIndex;
+    // The tunnel runs straight; on the surface the road ahead bends.
+    cam.curve = tunnel ? 0 : game.curves.curvature * Camera3D.maxCurve;
     final underground = game.underground;
     if (tunnel) {
       _groundBase(canvas, Environments.visual(env));
@@ -110,6 +135,7 @@ class SceneRenderer {
     _drawables.clear();
 
     if (tunnel) _tunnelLighting(canvas);
+    _pursuitGlow(canvas);
 
     for (final e in _effects) {
       switch (e) {
@@ -124,24 +150,6 @@ class SceneRenderer {
       }
     }
     _effects.clear();
-
-    // Weather and speed streaks stay flat on the screen, as before.
-    canvas.save();
-    canvas.translate(size.x / 2, 0);
-    canvas.scale(zoom);
-    canvas.translate(-GameConfig.worldWidth / 2, 0);
-    game.atmosphere.render(canvas);
-    game.speedLines.render(canvas);
-    canvas.restore();
-
-    // Falling into (or climbing out of) the manhole fades through black.
-    final blackout = underground.blackout;
-    if (blackout > 0.001) {
-      _p.color = Color.fromRGBO(0, 0, 0, blackout.clamp(0.0, 1.0));
-      canvas.drawRect(Rect.fromLTWH(0, 0, size.x, size.y), _p);
-    }
-
-    canvas.restore();
   }
 
   void _tunnelLighting(Canvas canvas) {
@@ -210,6 +218,10 @@ class SceneRenderer {
     const sh = GameConfig.shoulderWidth;
     _p.color = env.leftColor;
     c.drawRect(Rect.fromLTRB(0, hz, w, h), _p);
+    if (cam.curve != 0) {
+      _curvedGround(c, env);
+      return;
+    }
     final rl = _edgeAtBottom(GameConfig.roadLeft);
     final rr = _edgeAtBottom(GameConfig.roadRight);
     final sl = _edgeAtBottom(GameConfig.roadLeft - sh);
@@ -221,12 +233,76 @@ class SceneRenderer {
     _poly(c, [vp, rl, rr], env.asphalt);
   }
 
+  /// Bands of distance ahead of the rider used to draw a bent road, denser
+  /// close up where the road is big on screen.
+  static const int _curveStrips = 48;
+
+  /// Distances ahead (0 = the rider's row … farZ) splitting the bent road.
+  Iterable<double> get _stripZs sync* {
+    for (var i = 0; i <= _curveStrips; i++) {
+      final t = i / _curveStrips;
+      yield Camera3D.farZ * t * t;
+    }
+  }
+
+  /// Screen y of the road surface at world row [y].
+  double _screenY(double y) => cam.horizonY + cam.camHeight * cam.focal / cam.depthOf(y);
+
+  /// The bent ground: one polygon per colour band traced along both of its
+  /// edges, so there are no seams between distance bands.
+  void _curvedGround(Canvas c, EnvironmentTheme env) {
+    const sh = GameConfig.shoulderWidth;
+    const xs = [GameConfig.roadLeft - sh, GameConfig.roadLeft, GameConfig.roadRight, GameConfig.roadRight + sh];
+    // Rows from the far end of the road down to the bottom of the screen.
+    final rows = [for (final z in _stripZs.toList().reversed) cam.playerY - z];
+    final edges = [
+      for (final x in xs) [for (final y in rows) cam.project(x, y)],
+    ];
+    // Past the rider the road is straight down to the screen edge.
+    for (var i = 0; i < xs.length; i++) {
+      edges[i].add(_edgeAtBottom(xs[i]));
+      // Close the small gap between the drawn road's far end and the horizon.
+      final far = edges[i].first;
+      edges[i].insert(0, Offset(far.dx, cam.horizonY));
+    }
+    final farRight = cam.width * 4;
+    void band(List<Offset> leftEdge, List<Offset> rightEdge, Color color) =>
+        _poly(c, [...leftEdge, ...rightEdge.reversed], color);
+    _poly(c, [
+      ...edges[3],
+      Offset(math.max(farRight, edges[3].last.dx + 10), cam.height),
+      Offset(math.max(farRight, edges[3].first.dx + 10), cam.horizonY),
+    ], env.rightColor);
+    band(edges[0], edges[1], env.shoulder);
+    band(edges[2], edges[3], env.shoulder);
+    band(edges[1], edges[2], env.asphalt);
+  }
+
   void _road(Canvas c) {
+    if (cam.curve == 0) {
+      _roadBand(c, cam.farY, cam.nearY, 0, cam.horizonY, cam.height);
+      return;
+    }
+    // At and behind the rider the road is straight.
+    _roadBand(c, cam.playerY, cam.nearY, 0, _screenY(cam.playerY), cam.height);
+    final zs = _stripZs.toList();
+    for (var i = 0; i < zs.length - 1; i++) {
+      final yNear = cam.playerY - zs[i];
+      final yFar = cam.playerY - zs[i + 1];
+      final dx = cam.bendPx(cam.playerY - (zs[i] + zs[i + 1]) / 2);
+      _roadBand(c, yFar, yNear, dx, _screenY(yFar), _screenY(yNear));
+    }
+  }
+
+  /// Draws the road's markings between world rows [far] and [near], shifted
+  /// [dx] pixels sideways, inside screen rows [top]–[bottom].
+  void _roadBand(Canvas c, double far, double near, double dx, double top, double bottom) {
     c.save();
-    c.clipRect(Rect.fromLTRB(0, cam.horizonY, cam.width, cam.height));
+    c.clipRect(Rect.fromLTRB(0, math.max(top, cam.horizonY), cam.width, math.min(bottom + 0.5, cam.height)));
+    if (dx != 0) c.translate(dx, 0);
     c.transform(cam.groundMatrix());
-    c.clipRect(Rect.fromLTRB(-4000, cam.farY, 4000, cam.nearY));
-    game.road.renderRange(c, cam.farY, cam.nearY);
+    c.clipRect(Rect.fromLTRB(-4000, far, 4000, near));
+    game.road.renderRange(c, far, near);
     c.restore();
   }
 
@@ -339,6 +415,9 @@ class SceneRenderer {
           final side = child.mode == OfficerMode.catching ? 0.0 : (child.x < GameConfig.worldWidth / 2 ? 1.0 : -1.0);
           final behind = ((child.y - player.y) / 60).clamp(0.0, 1.0);
           _add(y, (c) => RiderView.drawOfficer(c, cam, child.x + side * 34 * behind, y, child.time));
+        case PursuitOfficer():
+          final y = cam.pullBehind(child.y);
+          _add(y, (c) => RiderView.drawOfficer(c, cam, child.x, y, child.time));
         case AmbulanceResponder():
           _add(child.y + child.height / 2, (c) => VehicleView.drawAmbulance(c, cam, child));
         case PlayerMotorcycle():
@@ -349,6 +428,29 @@ class SceneRenderer {
           _effects.add(child as PositionComponent);
       }
     }
+  }
+
+  /// Red and blue siren light washing in from behind while LTO officers
+  /// pursue; stronger with more officers. Kept to the bottom corners so it
+  /// never hides the road ahead. The officer who blocks a lane is drawn as a
+  /// [PursuitOfficer].
+  void _pursuitGlow(Canvas canvas) {
+    final level = game.pursuit.level;
+    if (level <= 0 || game.underground.showsTunnel || !game.state.isRunLive) return;
+    final w = cam.width;
+    final h = cam.height;
+    final redOn = (_time * 2).floor().isEven;
+    final strength = 0.24 + 0.06 * math.min(level, 4);
+    for (final (left, color) in [(true, const Color(0xFFFF1744)), (false, const Color(0xFF2979FF))]) {
+      final on = left == redOn;
+      final center = Offset(left ? 0 : w, h);
+      _p.shader = ui.Gradient.radial(center, w * 0.55, [
+        color.withValues(alpha: on ? strength : strength * 0.35),
+        color.withValues(alpha: 0),
+      ]);
+      canvas.drawRect(Rect.fromLTWH(left ? 0 : w / 2, h * 0.55, w / 2, h * 0.45), _p);
+    }
+    _p.shader = null;
   }
 
   void _drawManhole(Canvas c, OpenManhole hole) {

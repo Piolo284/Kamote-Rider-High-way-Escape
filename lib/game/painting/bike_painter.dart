@@ -37,7 +37,8 @@ class BikePainter {
       body: bike.bodyColor,
       accent: bike.accentColor,
       jacket: Color.lerp(bike.accentColor, const Color(0xFF263238), 0.55)!,
-      helmet: bike.accentColor,
+      // The kamote rides bareheaded (a fictional arcade design choice).
+      helmet: null,
       braking: braking,
       opacity: opacity,
       anim: anim,
@@ -82,7 +83,7 @@ class BikePainter {
     required Color body,
     required Color accent,
     required Color jacket,
-    required Color helmet,
+    required Color? helmet,
     required bool braking,
     required double opacity,
     double anim = 0,
@@ -149,7 +150,7 @@ class BikePainter {
     _p.color = const Color(0xFFFFF59D);
     canvas.drawCircle(const Offset(20, 12), 2.6, _p);
 
-    // Rider: arms, back, helmet.
+    // Rider: arms, back, head (helmet only for the officer).
     _stroke
       ..color = jacket
       ..strokeWidth = 4.2;
@@ -159,13 +160,24 @@ class BikePainter {
     canvas.drawRRect(RRect.fromLTRBR(11, 30, 29, 55, const Radius.circular(8)), _p);
     _p.color = const Color(0x22FFFFFF);
     canvas.drawRRect(RRect.fromLTRBR(13, 33, 20, 52, const Radius.circular(5)), _p);
-    _p.color = helmet;
     final bob = anim == 0 ? 0.0 : (anim * 9 % 2 < 1 ? 0.4 : -0.4);
-    canvas.drawCircle(Offset(20 + bob, 33), 7.6, _p);
-    _p.color = body;
-    canvas.drawRect(Rect.fromLTWH(18.6 + bob, 25.6, 2.8, 14.8), _p);
-    _p.color = const Color(0x55FFFFFF);
-    canvas.drawCircle(Offset(17.5 + bob, 30.5), 2.6, _p);
+    if (helmet == null) {
+      // Seen from above: ears, then short dark hair.
+      _p.color = const Color(0xFFC68E5E);
+      canvas.drawCircle(Offset(13.4 + bob, 33.5), 1.8, _p);
+      canvas.drawCircle(Offset(26.6 + bob, 33.5), 1.8, _p);
+      _p.color = const Color(0xFF2B1D14);
+      canvas.drawCircle(Offset(20 + bob, 33), 6.8, _p);
+      _p.color = const Color(0x33FFFFFF);
+      canvas.drawCircle(Offset(17.8 + bob, 30.8), 2.2, _p);
+    } else {
+      _p.color = helmet;
+      canvas.drawCircle(Offset(20 + bob, 33), 7.6, _p);
+      _p.color = body;
+      canvas.drawRect(Rect.fromLTWH(18.6 + bob, 25.6, 2.8, 14.8), _p);
+      _p.color = const Color(0x55FFFFFF);
+      canvas.drawCircle(Offset(17.5 + bob, 30.5), 2.6, _p);
+    }
 
     // Tail light.
     _p.color = braking ? const Color(0xFFFF1744) : const Color(0xFFC62828);
